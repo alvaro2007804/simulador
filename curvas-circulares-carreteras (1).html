@@ -1,0 +1,3536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Curvas Circulares de Carreteras — Panel Educativo Interactivo</title>
+  <meta name="description" content="Reconstrucción geométrica de curvas circulares de carreteras mediante puntos de control. Método de Cramer aplicado a la topografía vial." />
+  <meta name="keywords" content="curvas circulares, carreteras, topografía, Cramer, circunferencia, panel educativo, STEM" />
+  <meta name="author" content="Panel Educativo" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Curvas Circulares de Carreteras — Panel Educativo" />
+  <meta property="og:description" content="Reconstrucción geométrica de curvas circulares mediante puntos de control. Método de Cramer aplicado a la topografía vial." />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_ES" />
+
+  <!-- Fuentes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- MathJax -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+      startup: { ready: () => { MathJax.startup.defaultReady(); } }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <style>
+    /* ============================================================
+       SPACE DARK + GLASSMORPHISM — Estilos inline
+       ============================================================ */
+    :root {
+      --radius: 0.75rem;
+      --space-deep: #090d16;
+      --space-bg: #0f172a;
+      --space-card: rgba(30, 41, 59, 0.55);
+      --space-border: rgba(255, 255, 255, 0.08);
+      --space-text: #f8fafc;
+      --space-text-muted: #cbd5e1;
+      --primary: #6366f1;
+      --secondary: #a855f7;
+      --accent: #10b981;
+      --danger: #f43f5e;
+      --warning: #f59e0b;
+      --grid-line: #141b2a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--space-deep);
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.15), transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(168, 85, 247, 0.12), transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05), transparent 50%);
+      background-attachment: fixed;
+      color: var(--space-text);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Outfit', system-ui, sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    /* Glassmorphism */
+    .glass-card {
+      background: var(--space-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--space-border);
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .glass-tab {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--space-border);
+      border-radius: 14px;
+      color: var(--space-text-muted);
+      transition: all 0.25s ease;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .glass-tab[aria-selected="true"],
+    .glass-tab[data-active="true"] {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(168, 85, 247, 0.7));
+      color: white;
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    }
+    .glass-tab:hover:not([aria-selected="true"]):not([data-active="true"]) {
+      color: var(--space-text);
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(30, 41, 59, 0.75);
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--primary);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 0 0 10px 0;
+      z-index: 9999;
+      transition: top 0.2s;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* Focus visible */
+    :focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Print */
+    @media print {
+      body { background: white !important; color: black !important; }
+      .glass-card { background: white !important; border: 1px solid #ccc !important; backdrop-filter: none !important; }
+      .glass-tab { border: 2px solid #333 !important; background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+    }
+
+    /* Forced colors (high contrast) */
+    @media (forced-colors: active) {
+      .glass-card { border: 2px solid CanvasText; background: Canvas; }
+      .glass-tab { border: 2px solid CanvasText; background: Canvas; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.7); }
+
+    /* Text colors */
+    .text-primary-c { color: var(--primary); }
+    .text-secondary-c { color: var(--secondary); }
+    .text-accent-c { color: var(--accent); }
+    .text-danger-c { color: var(--danger); }
+    .text-warning-c { color: var(--warning); }
+    .text-muted-c { color: var(--space-text-muted); }
+    .font-mono { font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace; }
+
+    /* Animations */
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-in { animation: slide-in 0.4s ease-out; }
+
+    /* MathJax */
+    mjx-container { font-size: 1.05em !important; }
+    mjx-container[display="true"] { margin: 0.6em 0 !important; }
+
+    /* Layout */
+    .panel-root { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .site-header {
+      padding: 1.5rem 1rem 1rem;
+    }
+    @media (min-width: 768px) {
+      .site-header { padding: 2.5rem 2rem 1rem; }
+    }
+    .header-inner { max-width: 80rem; margin: 0 auto; }
+    .header-brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+    .brand-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 2.5rem; height: 2.5rem; border-radius: 1rem;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: white; font-weight: 800; font-size: 1.25rem;
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+      font-family: 'Outfit', sans-serif;
+    }
+    .brand-eyebrow {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--space-text-muted); font-weight: 600;
+    }
+    .site-title { font-size: 1.5rem; font-weight: 800; }
+    @media (min-width: 768px) { .site-title { font-size: 1.875rem; } }
+    .site-subtitle { color: var(--space-text-muted); font-size: 0.875rem; max-width: 48rem; }
+    @media (min-width: 768px) { .site-subtitle { font-size: 1rem; } }
+
+    /* Tabs nav */
+    .tabs-nav {
+      padding: 0.75rem 1rem;
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    @media (min-width: 768px) { .tabs-nav { padding: 0.75rem 2rem; } }
+    .tabs-nav-inner {
+      max-width: 80rem; margin: 0 auto;
+      display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.25rem;
+    }
+    .tab-btn {
+      white-space: nowrap; padding: 0.625rem 0.75rem;
+      font-size: 0.75rem; font-weight: 600;
+      display: flex; align-items: center; gap: 0.5rem;
+      border: none; font-family: inherit;
+    }
+    @media (min-width: 768px) { .tab-btn { padding: 0.625rem 1rem; font-size: 0.875rem; } }
+    .tab-icon { font-style: normal; }
+
+    /* Main content */
+    .main-content {
+      flex: 1; padding: 1.5rem 1rem;
+    }
+    @media (min-width: 768px) { .main-content { padding: 2rem; } }
+    .main-inner { max-width: 80rem; margin: 0 auto; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: slide-in 0.4s ease-out; }
+
+    /* Common UI */
+    .grid-2 { display: grid; gap: 1.5rem; }
+    @media (min-width: 1024px) { .grid-2 { grid-template-columns: 2fr 1fr; } }
+    .grid-2-rev { display: grid; gap: 1.5rem; }
+    @media (min-width: 1024px) { .grid-2-rev { grid-template-columns: 1fr 2fr; } }
+    .grid-md-2 { display: grid; gap: 1rem; }
+    @media (min-width: 768px) { .grid-md-2 { grid-template-columns: repeat(2, 1fr); } }
+    .grid-md-3 { display: grid; gap: 1rem; }
+    @media (min-width: 768px) { .grid-md-3 { grid-template-columns: repeat(3, 1fr); } }
+    .grid-sm-2 { display: grid; gap: 0.75rem; grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 640px) { .grid-sm-2 { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { .grid-sm-2 { grid-template-columns: repeat(4, 1fr); } }
+
+    .card-pad { padding: 1.25rem; }
+    @media (min-width: 768px) { .card-pad { padding: 1.5rem; } }
+
+    .space-y-6 > * + * { margin-top: 1.5rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+    .space-y-3 > * + * { margin-top: 0.75rem; }
+    .space-y-2 > * + * { margin-top: 0.5rem; }
+
+    .heading-xl { font-size: 1.875rem; }
+    @media (min-width: 768px) { .heading-xl { font-size: 2.25rem; } }
+    .heading-lg { font-size: 1.25rem; }
+    @media (min-width: 768px) { .heading-lg { font-size: 1.5rem; } }
+
+    .canvas-box {
+      width: 100%; height: 400px;
+      border-radius: 1rem; touch-action: none;
+      cursor: grab;
+    }
+    .canvas-box:active { cursor: grabbing; }
+    @media (min-width: 768px) { .canvas-box { height: 480px; } }
+
+    .canvas-sm {
+      width: 100%; height: 360px;
+      border-radius: 1rem;
+    }
+    @media (min-width: 768px) { .canvas-sm { height: 420px; } }
+
+    .metric-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.05); border-radius: 0.5rem;
+      padding: 0.625rem 0.75rem;
+    }
+    .metric-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--space-text-muted);
+    }
+    .metric-value { font-family: monospace; font-weight: 700; }
+
+    .metric-card {
+      background: rgba(255,255,255,0.05); border-radius: 0.75rem;
+      padding: 1rem;
+    }
+    .metric-card-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--space-text-muted); }
+    .metric-card-value { font-size: 1.5rem; font-weight: 700; font-family: monospace; }
+    .metric-card-formula { font-size: 0.75rem; font-family: monospace; color: rgba(203, 213, 225, 0.7); }
+
+    .formula-box {
+      background: rgba(255,255,255,0.05); border-radius: 0.75rem;
+      padding: 0.75rem; overflow-x: auto; text-align: center;
+      color: var(--secondary);
+    }
+
+    .badge {
+      display: inline-block; padding: 0.25rem 0.625rem;
+      border-radius: 9999px; font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-basico { background: rgba(16, 185, 129, 0.2); color: var(--accent); }
+    .badge-intermedio { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .badge-avanzado { background: rgba(244, 63, 94, 0.2); color: var(--danger); }
+
+    .ex-btn {
+      padding: 0.5rem 0.75rem; font-size: 0.875rem; font-weight: 600;
+      display: flex; align-items: center; gap: 0.5rem;
+      border: none; cursor: pointer; font-family: inherit;
+    }
+    .ex-dot {
+      display: inline-block; width: 0.5rem; height: 0.5rem;
+      border-radius: 50%;
+    }
+
+    .step-btn {
+      width: 100%; text-align: left; border-radius: 0.75rem;
+      padding: 0.75rem; transition: all 0.2s;
+      background: rgba(255,255,255,0.05); border: 1px solid transparent;
+      cursor: pointer; font-family: inherit; color: inherit;
+    }
+    .step-btn.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--primary);
+    }
+    .step-btn:hover:not(.active) {
+      background: rgba(255,255,255,0.1);
+    }
+    .step-num { font-size: 0.75rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem; }
+    .step-title { font-weight: 600; font-size: 0.875rem; }
+
+    .nav-btn {
+      flex: 1; padding: 0.5rem 0.75rem; font-weight: 600;
+      border: none; cursor: pointer; font-family: inherit;
+    }
+    .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .accordion-trigger {
+      width: 100%; display: flex; align-items: center; gap: 1rem;
+      padding: 1rem 1.25rem; text-align: left;
+      background: transparent; border: none; cursor: pointer;
+      font-family: inherit; color: inherit;
+    }
+    .accordion-trigger:hover { background: rgba(255,255,255,0.05); }
+    .accordion-chevron { transition: transform 0.2s; flex-shrink: 0; }
+    .accordion-trigger[aria-expanded="true"] .accordion-chevron { transform: rotate(180deg); }
+
+    .accordion-content {
+      padding: 0 1.25rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 1rem;
+    }
+
+    table.data-table {
+      width: 100%; border-collapse: collapse; font-size: 0.875rem;
+    }
+    table.data-table th {
+      text-align: left; padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      color: var(--space-text-muted); font-weight: 600;
+    }
+    table.data-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    table.data-table td.num { text-align: right; font-family: monospace; }
+
+    input[type="range"] {
+      width: 100%; height: 6px; border-radius: 3px;
+      background: rgba(255,255,255,0.1); outline: none;
+      -webkit-appearance: none; appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--primary); cursor: pointer;
+      border: 2px solid white;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--primary); cursor: pointer;
+      border: 2px solid white;
+    }
+
+    /* Inputs numéricos editables */
+    .coord-input {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      color: var(--space-text);
+      font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      font-size: 0.875rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .coord-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+    .coord-row {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .coord-label {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 2rem; height: 2rem; border-radius: 0.5rem;
+      background: rgba(16, 185, 129, 0.2); color: var(--accent);
+      font-weight: 700; font-size: 0.875rem;
+    }
+    .coord-col-label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--space-text-muted); text-align: center; font-weight: 600;
+    }
+
+    /* Pasos del proceso */
+    .paso-bloque {
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 3px solid var(--primary);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+    }
+    .paso-bloque h4 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .paso-formula {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.4rem;
+      padding: 0.4rem 0.6rem;
+      margin: 0.3rem 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--space-text);
+      overflow-x: auto;
+    }
+    .paso-resultado {
+      background: rgba(16, 185, 129, 0.1);
+      border-left: 3px solid var(--accent);
+      padding: 0.4rem 0.6rem;
+      margin-top: 0.4rem;
+      border-radius: 0.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .paso-resultado.error {
+      background: rgba(244, 63, 94, 0.1);
+      border-left-color: var(--danger);
+      color: var(--danger);
+    }
+    .paso-num {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      width: 1.5rem; height: 1.5rem;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 1.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.5rem;
+    }
+
+    .site-footer {
+      padding: 1.5rem 1rem; margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      background: rgba(9, 13, 22, 0.8);
+    }
+    @media (min-width: 768px) { .site-footer { padding: 1.5rem 2rem; } }
+    .footer-inner {
+      max-width: 80rem; margin: 0 auto;
+      text-align: center; font-size: 0.75rem;
+      color: var(--space-text-muted);
+    }
+    .footer-inner p + p { margin-top: 0.25rem; }
+
+    .border-l-danger { border-left: 4px solid var(--danger); }
+
+    ul.clean-list { list-style: none; }
+    ul.clean-list li {
+      padding-left: 1.25rem; position: relative;
+      margin-bottom: 0.5rem; font-size: 0.875rem;
+      color: var(--space-text-muted);
+    }
+    ul.clean-list li::before {
+      content: '●'; color: var(--accent); position: absolute;
+      left: 0; top: 0;
+    }
+
+    .pre-line { white-space: pre-line; }
+
+    /* ============================================================
+       PANEL DE CONTROL MAESTRO — Botón flotante + Modal
+       ============================================================ */
+    .config-fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+      font-size: 1.5rem;
+      z-index: 100;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .config-fab:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 32px rgba(99, 102, 241, 0.7);
+    }
+    .config-fab::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--primary);
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .config-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .config-modal-overlay.active { display: flex; }
+    .config-modal {
+      background: var(--space-bg);
+      border: 1px solid var(--space-border);
+      border-radius: 1.5rem;
+      max-width: 56rem;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .config-section {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-left: 3px solid var(--primary);
+    }
+    .config-section h4 {
+      color: var(--primary);
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.5rem;
+    }
+    .config-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .config-actions button {
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-family: inherit;
+      flex: 1;
+      min-width: 120px;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-accent { background: var(--accent); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-secondary { background: var(--secondary); color: white; }
+    .btn-ghost { background: rgba(255, 255, 255, 0.1); color: var(--space-text); }
+    .config-actions button:hover { opacity: 0.85; }
+
+    .toast {
+      position: fixed;
+      bottom: 6rem;
+      right: 1.5rem;
+      background: var(--accent);
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      z-index: 300;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+    }
+    .toast.show { transform: translateX(0); }
+  </style>
+</head>
+<body>
+  <div class="panel-root">
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="header-brand">
+          <span class="brand-badge" aria-hidden="true">C</span>
+          <div>
+            <div class="brand-eyebrow">Panel educativo STEM</div>
+            <h1 class="site-title">Curvas Circulares de Carreteras</h1>
+          </div>
+        </div>
+        <p class="site-subtitle">
+          Reconstrucción geométrica mediante puntos de control — Método de Cramer aplicado a la topografía vial.
+        </p>
+      </div>
+    </header>
+
+    <!-- TABS NAV -->
+    <nav class="tabs-nav" role="tablist" aria-label="Pestañas del panel educativo">
+      <div class="tabs-nav-inner" id="tabs-nav"></div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main-content" id="main-content" tabindex="-1">
+      <div class="main-inner" id="tab-panels"></div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer no-print">
+      <div class="footer-inner">
+        <p>Panel educativo interactivo — Curvas Circulares de Carreteras · Basado en el trabajo grupal analizado</p>
+        <p>Construido siguiendo <span class="text-primary-c">AGENT-PROMPT-v2.md</span> · Space Dark + Glassmorphism · WCAG 2.1 AA · Núcleo matemático aislado</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- BOTÓN FLOTANTE DE CONFIGURACIÓN MAESTRA -->
+  <button class="config-fab" id="config-fab" aria-label="Abrir panel de configuración maestra" title="Configuración maestra — Modifica todo el simulador">⚙️</button>
+
+  <!-- MODAL DE CONFIGURACIÓN MAESTRA -->
+  <div class="config-modal-overlay" id="config-modal-overlay" role="dialog" aria-labelledby="config-title" aria-modal="true">
+    <div class="config-modal">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 id="config-title" class="heading-lg font-bold text-primary-c">⚙️ Panel de configuración maestra</h3>
+        <button id="config-close" class="btn-ghost" style="width: 2rem; height: 2rem; border-radius: 50%; border: none; cursor: pointer; font-size: 1.2rem;">✕</button>
+      </div>
+      <p class="text-muted-c" style="font-size: 0.85rem; margin-bottom: 1rem;">
+        Desde aquí puedes modificar <strong>TODO</strong> el simulador: coordenadas, parámetros, ejercicios, e incluso el título y la descripción. Los cambios se guardan automáticamente en tu navegador (localStorage).
+      </p>
+
+      <!-- Sección: Datos generales -->
+      <div class="config-section">
+        <h4>📋 Datos generales del simulador</h4>
+        <div class="space-y-2">
+          <div>
+            <label class="coord-col-label" style="text-align:left; display:block; margin-bottom:0.3rem;">Título del simulador</label>
+            <input type="text" class="coord-input" id="cfg-title" style="width:100%;" />
+          </div>
+          <div>
+            <label class="coord-col-label" style="text-align:left; display:block; margin-bottom:0.3rem;">Subtítulo / descripción</label>
+            <textarea class="coord-input" id="cfg-subtitle" rows="2" style="width:100%; resize:vertical;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Coordenadas de los puntos -->
+      <div class="config-section">
+        <h4>📍 Coordenadas de los puntos (Intro & Lab)</h4>
+        <div class="config-grid" id="cfg-puntos"></div>
+      </div>
+
+      <!-- Sección: Parámetros de elementos de curva -->
+      <div class="config-section">
+        <h4>🔧 Parámetros de la curva (Elementos)</h4>
+        <div class="config-grid">
+          <div>
+            <label class="coord-col-label" style="text-align:left; display:block; margin-bottom:0.3rem;">Radio R (m)</label>
+            <input type="number" class="coord-input" id="cfg-radio" step="any" />
+          </div>
+          <div>
+            <label class="coord-col-label" style="text-align:left; display:block; margin-bottom:0.3rem;">Deflexión Δ (°)</label>
+            <input type="number" class="coord-input" id="cfg-delta" step="any" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Editor de ejercicios -->
+      <div class="config-section">
+        <h4>📚 Editor de ejercicios interactivos</h4>
+        <p class="text-muted-c" style="font-size:0.8rem; margin-bottom:0.5rem;">Selecciona un ejercicio y edita su contenido. Para editar los pasos detalladamente, usa el botón "✏️ Editar" en la pestaña "12 Ejercicios Interactivos".</p>
+        <div class="config-grid" style="grid-template-columns: 1fr;">
+          <select class="coord-input" id="cfg-ej-select"></select>
+        </div>
+        <div id="cfg-ej-editor" class="space-y-2" style="margin-top: 0.75rem;"></div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="config-actions">
+        <button class="btn-accent" id="cfg-save">💾 Guardar cambios</button>
+        <button class="btn-primary" id="cfg-export">⬇️ Exportar JSON</button>
+        <button class="btn-secondary" id="cfg-import">⬆️ Importar JSON</button>
+        <button class="btn-warning" id="cfg-reset">↺ Restaurar valores originales</button>
+        <button class="btn-danger" id="cfg-clear">🗑️ Borrar guardado</button>
+        <button class="btn-ghost" id="cfg-cancel">Cerrar</button>
+      </div>
+      <input type="file" id="cfg-import-file" accept=".json" style="display:none;" />
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    /* ============================================================
+       NÚCLEO MATEMÁTICO AISLADO — Funciones puras fail-safe
+       ============================================================ */
+    const Core = (function () {
+      function isValidNumber(x) {
+        return typeof x === 'number' && Number.isFinite(x);
+      }
+      function toFiniteNumber(x, fallback) {
+        if (fallback === undefined) fallback = 0;
+        if (x === null || x === undefined || x === '') return fallback;
+        const n = Number(x);
+        return Number.isFinite(n) ? n : fallback;
+      }
+      function distancia(p1, p2) {
+        if (!isValidNumber(p1.x) || !isValidNumber(p1.y)) return 0;
+        if (!isValidNumber(p2.x) || !isValidNumber(p2.y)) return 0;
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+      function calcularRadio(punto, centro) {
+        if (!isValidNumber(punto.x) || !isValidNumber(punto.y)) return 0;
+        if (!isValidNumber(centro.h) || !isValidNumber(centro.k)) return 0;
+        const dx = punto.x - centro.h;
+        const dy = punto.y - centro.k;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+      function construirSistema(p1, p2, p3) {
+        const def = { a1:0, b1:0, c1:0, a2:0, b2:0, c2:0, D:0, Dh:0, Dk:0, h:0, k:0, valido:false };
+        if (!isValidNumber(p1.x) || !isValidNumber(p1.y)) return def;
+        if (!isValidNumber(p2.x) || !isValidNumber(p2.y)) return def;
+        if (!isValidNumber(p3.x) || !isValidNumber(p3.y)) return def;
+
+        const a1 = 2 * (p2.x - p1.x);
+        const b1 = 2 * (p2.y - p1.y);
+        const c1 = (p2.x*p2.x + p2.y*p2.y) - (p1.x*p1.x + p1.y*p1.y);
+        const a2 = 2 * (p3.x - p1.x);
+        const b2 = 2 * (p3.y - p1.y);
+        const c2 = (p3.x*p3.x + p3.y*p3.y) - (p1.x*p1.x + p1.y*p1.y);
+
+        const D = a1 * b2 - a2 * b1;
+        if (Math.abs(D) < 1e-9) {
+          return Object.assign({}, def, { a1, b1, c1, a2, b2, c2, D, valido: false });
+        }
+        const Dh = c1 * b2 - c2 * b1;
+        const Dk = a1 * c2 - a2 * c1;
+        const h = Dh / D;
+        const k = Dk / D;
+        return { a1, b1, c1, a2, b2, c2, D, Dh, Dk, h, k, valido: true };
+      }
+      function reconstruirCircunferencia(p1, p2, p3) {
+        const sis = construirSistema(p1, p2, p3);
+        if (!sis.valido) return { h:0, k:0, r:0, valida:false };
+        const centro = { h: sis.h, k: sis.k };
+        const r = calcularRadio(p1, centro);
+        return { h: sis.h, k: sis.k, r, valida: isValidNumber(r) && r > 0 };
+      }
+      function elementosCurvaCircular(radio, anguloDeflexion) {
+        const def = { tangente:0, externa:0, ordenadaMedia:0, longitudArco:0, cuerdaLarga:0, valido:false };
+        if (!isValidNumber(radio) || !isValidNumber(anguloDeflexion)) return def;
+        if (radio <= 0 || anguloDeflexion <= 0 || anguloDeflexion >= 180) return def;
+        const dRad = (anguloDeflexion * Math.PI) / 180;
+        return {
+          tangente: radio * Math.tan(dRad / 2),
+          externa: radio * (1 / Math.cos(dRad / 2) - 1),
+          ordenadaMedia: radio * (1 - Math.cos(dRad / 2)),
+          longitudArco: radio * dRad,
+          cuerdaLarga: 2 * radio * Math.sin(dRad / 2),
+          valido: true
+        };
+      }
+      function gradoCurvatura(radio, arcoTrue) {
+        if (arcoTrue === undefined) arcoTrue = true;
+        if (!isValidNumber(radio) || radio <= 0) return 0;
+        if (arcoTrue) return (100 * 180) / (Math.PI * radio);
+        const ratio = 50 / radio;
+        if (ratio >= 1) return 0;
+        return (2 * Math.asin(ratio) * 180) / Math.PI;
+      }
+      function fmt(n, decimales) {
+        if (decimales === undefined) decimales = 3;
+        if (!isValidNumber(n)) return '—';
+        return n.toLocaleString('es-EC', {
+          minimumFractionDigits: decimales,
+          maximumFractionDigits: decimales
+        });
+      }
+
+      const PUNTOS_TRABAJO = {
+        A: { x: 517178.087, y: 9757860.897, etiqueta: 'A' },
+        B: { x: 517523.755, y: 9758145.868, etiqueta: 'B' },
+        C: { x: 517874.810, y: 9758475.680, etiqueta: 'C' }
+      };
+      const RESULTADO_TRABAJO = reconstruirCircunferencia(
+        PUNTOS_TRABAJO.A, PUNTOS_TRABAJO.B, PUNTOS_TRABAJO.C
+      );
+
+      /**
+       * Conversión geográfica (lat, lon) → UTM (zona 17S).
+       * Implementación simplificada con fórmulas de Karney.
+       */
+      function geoAUtm(lat, lon, zona, hemisferioSur) {
+        if (zona === undefined) zona = 17;
+        if (hemisferioSur === undefined) hemisferioSur = true;
+        if (!isValidNumber(lat) || !isValidNumber(lon)) return { x: 0, y: 0, valido: false };
+        if (lat < -80 || lat > 84) return { x: 0, y: 0, valido: false };
+        const a = 6378137.0;
+        const f = 1 / 298.257223563;
+        const k0 = 0.9996;
+        const n = f / (2 - f);
+        const n2 = n * n, n3 = n2 * n, n4 = n3 * n;
+        const A = (a / (1 + n)) * (1 + n2 / 4 + n4 / 64);
+        const latRad = (lat * Math.PI) / 180;
+        const lonRad = (lon * Math.PI) / 180;
+        const lonMeridiano = ((zona - 1) * 6 - 180 + 3) * (Math.PI / 180);
+        const t = Math.sinh(Math.atanh(Math.sin(latRad)) -
+          (2 * Math.sqrt(n)) / (1 + n) * Math.atanh(
+            (2 * Math.sqrt(n)) / (1 + n) * Math.sin(latRad)
+          ));
+        const xiPrime = Math.atan2(t, Math.cos(lonRad - lonMeridiano));
+        const etaPrime = Math.asinh(Math.sin(lonRad - lonMeridiano) / Math.sqrt(t * t + 1));
+        const alpha1 = n / 2 - (2 / 3) * n2 + (5 / 16) * n3 + (41 / 180) * n4;
+        const alpha2 = (13 / 48) * n2 - (3 / 5) * n3 + (557 / 1440) * n4;
+        const alpha3 = (61 / 240) * n3 - (103 / 140) * n4;
+        const alpha4 = (49561 / 161280) * n4;
+        const xi = xiPrime +
+          alpha1 * Math.sin(2 * xiPrime) * Math.cosh(2 * etaPrime) +
+          alpha2 * Math.sin(4 * xiPrime) * Math.cosh(4 * etaPrime) +
+          alpha3 * Math.sin(6 * xiPrime) * Math.cosh(6 * etaPrime) +
+          alpha4 * Math.sin(8 * xiPrime) * Math.cosh(8 * etaPrime);
+        const eta = etaPrime +
+          alpha1 * Math.cos(2 * xiPrime) * Math.sinh(2 * etaPrime) +
+          alpha2 * Math.cos(4 * xiPrime) * Math.sinh(4 * etaPrime) +
+          alpha3 * Math.cos(6 * xiPrime) * Math.sinh(6 * etaPrime) +
+          alpha4 * Math.cos(8 * xiPrime) * Math.sinh(8 * etaPrime);
+        let x = k0 * A * eta + 500000;
+        let y = k0 * A * xi;
+        if (hemisferioSur) y += 10000000;
+        return { x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000, valido: true };
+      }
+
+      return {
+        isValidNumber, toFiniteNumber, distancia, calcularRadio,
+        construirSistema, reconstruirCircunferencia,
+        elementosCurvaCircular, gradoCurvatura, fmt, geoAUtm,
+        PUNTOS_TRABAJO, RESULTADO_TRABAJO
+      };
+    })();
+
+    /* ============================================================
+       CANVAS UTILITIES
+       ============================================================ */
+    function drawGrid(ctx, w, h, size) {
+      if (!size) size = 40;
+      ctx.strokeStyle = '#141b2a';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += size) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += size) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+    }
+    function drawPoint(ctx, p, opts) {
+      opts = opts || {};
+      const radius = opts.radius || 6;
+      const fontSize = opts.fontSize || 13;
+      const color = opts.color || p.color || '#10b981';
+      ctx.fillStyle = color;
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      if (p.label) {
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '600 ' + fontSize + 'px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(p.label, p.x + radius + 6, p.y - radius - 4);
+      }
+    }
+    function drawCircle(ctx, cx, cy, r, opts) {
+      opts = opts || {};
+      const stroke = opts.stroke || '#6366f1';
+      const fill = opts.fill;
+      const lineWidth = opts.lineWidth || 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.max(0.5, r), 0, Math.PI * 2);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      if (opts.dashed) ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    function drawLine(ctx, p1, p2, opts) {
+      opts = opts || {};
+      const color = opts.color || '#a855f7';
+      const lineWidth = opts.lineWidth || 2;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      if (opts.dashed) ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (opts.label) {
+        const mx = (p1.x + p2.x) / 2;
+        const my = (p1.y + p2.y) / 2;
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '600 12px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(opts.label, mx + 4, my - 4);
+      }
+    }
+    function drawLabelBox(ctx, text, x, y, opts) {
+      opts = opts || {};
+      const color = opts.color || '#f8fafc';
+      const bg = opts.bg || 'rgba(15, 23, 42, 0.85)';
+      const fontSize = opts.fontSize || 12;
+      const padding = opts.padding || 6;
+      ctx.font = '600 ' + fontSize + 'px "Plus Jakarta Sans", sans-serif';
+      const metrics = ctx.measureText(text);
+      const w = metrics.width + padding * 2;
+      const h = fontSize + padding;
+      ctx.fillStyle = bg;
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(x, y - h + padding, w, h, 6);
+        ctx.fill();
+      } else {
+        ctx.fillRect(x, y - h + padding, w, h);
+      }
+      ctx.fillStyle = color;
+      ctx.fillText(text, x + padding, y);
+    }
+    function drawMatrix(ctx, cx, cy, a, b, c, d, color) {
+      const w = 240, h = 140;
+      const x = cx - w / 2;
+      const y = cy - h / 2;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 8); ctx.lineTo(x - 6, y - 8);
+      ctx.lineTo(x - 6, y + h + 8); ctx.lineTo(x, y + h + 8);
+      ctx.moveTo(x + w, y - 8); ctx.lineTo(x + w + 6, y - 8);
+      ctx.lineTo(x + w + 6, y + h + 8); ctx.lineTo(x + w, y + h + 8);
+      ctx.stroke();
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '600 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(a, x + 60, y + 40);
+      ctx.fillText(b, x + 180, y + 40);
+      ctx.fillText(c, x + 60, y + 110);
+      ctx.fillText(d, x + 180, y + 110);
+      ctx.textAlign = 'left';
+    }
+    function drawArrow(ctx, x1, y1, x2, y2, color, label) {
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const head = 10;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath(); ctx.fill();
+      if (label) {
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+        drawLabelBox(ctx, label, mx + 6, my - 6, { color });
+      }
+    }
+
+    /* ============================================================
+       HI-DPI Canvas helper
+       ============================================================ */
+    function getScaledContext(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dw = rect.width || 500;
+      const dh = rect.height || 320;
+      const dpr = window.devicePixelRatio || 1;
+      if (canvas.width !== Math.floor(dw * dpr) || canvas.height !== Math.floor(dh * dpr)) {
+        canvas.width = dw * dpr;
+        canvas.height = dh * dpr;
+        canvas.style.width = dw + 'px';
+        canvas.style.height = dh + 'px';
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+      return { ctx, w: dw, h: dh };
+    }
+
+    /* ============================================================
+       GLOBAL STATE — window.canvasDrawers registry
+       ============================================================ */
+    window.canvasDrawers = {};
+    function triggerTabDraw(name) {
+      if (window.canvasDrawers[name]) {
+        setTimeout(function () { window.canvasDrawers[name](); }, 80);
+      }
+    }
+    function renderMathInContainer(container) {
+      if (window.MathJax && window.MathJax.typesetPromise && container) {
+        window.MathJax.typesetPromise([container]).catch(function () {});
+      }
+    }
+
+    /* ============================================================
+       TABS
+       ============================================================ */
+    const TABS = [
+      { id: 'intro', label: 'Intro & Lab', icon: '🧪' },
+      { id: 'clasificacion', label: 'Clasificación', icon: '🗂️' },
+      { id: 'propiedades', label: 'Propiedades', icon: '📐' },
+      { id: 'elementos', label: 'Elementos', icon: '🔧' },
+      { id: 'ingenieria', label: 'Ingeniería', icon: '🛣️' },
+      { id: 'interactivos', label: '12 Ejercicios Interactivos', icon: '🎯' },
+      { id: 'propuestos', label: '12 Ejercicios Propuestos', icon: '📝' }
+    ];
+
+    let activeTab = 'intro';
+
+    function renderTabsNav() {
+      const nav = document.getElementById('tabs-nav');
+      nav.innerHTML = TABS.map(function (t, i) {
+        const isActive = t.id === activeTab;
+        return '<button class="glass-tab tab-btn" ' +
+          'id="tab-btn-' + t.id + '" ' +
+          'role="tab" ' +
+          'aria-selected="' + isActive + '" ' +
+          'aria-controls="tabpanel-' + t.id + '" ' +
+          'tabindex="' + (isActive ? 0 : -1) + '" ' +
+          'data-tab="' + t.id + '" ' +
+          'data-active="' + isActive + '">' +
+          '<span class="tab-icon" aria-hidden="true">' + t.icon + '</span>' +
+          '<span>' + t.label + '</span>' +
+          '</button>';
+      }).join('');
+
+      nav.querySelectorAll('.tab-btn').forEach(function (btn, i) {
+        btn.addEventListener('click', function () {
+          activateTab(btn.dataset.tab);
+        });
+        btn.addEventListener('keydown', function (e) {
+          let newIndex = i;
+          if (e.key === 'ArrowRight') newIndex = (i + 1) % TABS.length;
+          else if (e.key === 'ArrowLeft') newIndex = (i - 1 + TABS.length) % TABS.length;
+          else if (e.key === 'Home') newIndex = 0;
+          else if (e.key === 'End') newIndex = TABS.length - 1;
+          else return;
+          e.preventDefault();
+          activateTab(TABS[newIndex].id);
+          requestAnimationFrame(function () {
+            const el = document.getElementById('tab-btn-' + TABS[newIndex].id);
+            if (el) el.focus();
+          });
+        });
+      });
+    }
+
+    function activateTab(id) {
+      activeTab = id;
+      // Sync ARIA
+      TABS.forEach(function (t) {
+        const btn = document.getElementById('tab-btn-' + t.id);
+        const panel = document.getElementById('tabpanel-' + t.id);
+        const isActive = t.id === id;
+        if (btn) {
+          btn.setAttribute('aria-selected', isActive);
+          btn.setAttribute('tabindex', isActive ? 0 : -1);
+          btn.dataset.active = isActive;
+        }
+        if (panel) {
+          panel.classList.toggle('active', isActive);
+        }
+      });
+      triggerTabDraw(id);
+      // Si es la pestaña Ingeniería, renderizar la tabla editable
+      if (id === 'ingenieria') {
+        setTimeout(function () {
+          renderIngTabla();
+          const ingPanel = document.getElementById('tabpanel-ingenieria');
+          if (ingPanel) {
+            const resetBtn = document.getElementById('ing-reset');
+            const syncBtn = document.getElementById('ing-sync-lab');
+            if (resetBtn && !resetBtn.dataset.bound) {
+              resetBtn.dataset.bound = 'true';
+              resetBtn.addEventListener('click', function () {
+                ingState.puntos = [
+                  { label: 'A', lon: -80.8455129, lat: -2.1906897, x: 517178.087, y: 9757860.897 },
+                  { label: 'B', lon: -80.8424045, lat: -2.1881112, x: 517523.755, y: 9758145.868 },
+                  { label: 'C', lon: -80.8392477, lat: -2.1851270, x: 517874.810, y: 9758475.680 }
+                ];
+                renderIngTabla();
+              });
+            }
+            if (syncBtn && !syncBtn.dataset.bound) {
+              syncBtn.dataset.bound = 'true';
+              syncBtn.addEventListener('click', function () {
+                // Copiar coordenadas del laboratorio a la tabla de ingeniería
+                ingState.puntos = labState.pts.map(function (p, i) {
+                  const orig = [
+                    { lon: -80.8455129, lat: -2.1906897 },
+                    { lon: -80.8424045, lat: -2.1881112 },
+                    { lon: -80.8392477, lat: -2.1851270 }
+                  ];
+                  return { label: p.label, lon: orig[i].lon, lat: orig[i].lat, x: p.x, y: p.y };
+                });
+                renderIngTabla();
+              });
+            }
+          }
+        }, 50);
+      }
+      // Re-render math on activation
+      const activePanel = document.getElementById('tabpanel-' + id);
+      if (activePanel) renderMathInContainer(activePanel);
+    }
+
+    /* ============================================================
+       BASE DE DATOS — 12 EJERCICIOS INTERACTIVOS
+       ============================================================ */
+    const EJERCICIOS_INTERACTIVOS = [
+      {
+        id: 1, titulo: 'Ecuación general de la circunferencia', nivel: 'Básico',
+        enunciado: 'Dado el centro \\(C(513000,\\ 9668000)\\) y un punto de paso \\(P(517178{,}087,\\ 9757860{,}897)\\), escribe la ecuación general de la circunferencia y calcula su radio.',
+        pasos: [
+          { header: 'Paso 1 — Forma general', content: 'La ecuación general de una circunferencia con centro \\((h, k)\\) y radio \\(r\\) es:\n\\[(x - h)^2 + (y - k)^2 = r^2\\]' },
+          { header: 'Paso 2 — Sustituir el centro', content: 'Sustituimos \\(h = 513000\\) y \\(k = 9668000\\):\n\\[(x - 513000)^2 + (y - 9668000)^2 = r^2\\]' },
+          { header: 'Paso 3 — Usar el punto de paso', content: 'Como \\(P\\) está en la circunferencia, sustituimos \\(x_P\\) e \\(y_P\\) para encontrar \\(r\\):\n\\[(517178{,}087 - 513000)^2 + (9757860{,}897 - 9668000)^2 = r^2\\]' },
+          { header: 'Paso 4 — Calcular el radio', content: '\\[(4178{,}087)^2 + (89860{,}897)^2 = r^2\\]\n\\[17\\,456\\,571 + 8\\,074\\,989\\,356 = r^2\\]\n\\[r \\approx \\sqrt{8\\,092\\,445\\,927} \\approx 90\\,069{,}1\\ \\text{m}\\]' }
+        ],
+        graphicDesc: ['Plano con el centro C marcado.', 'Ecuación centrada en C.', 'Punto P marcado sobre el plano.', 'Circunferencia completa dibujada.']
+      },
+      {
+        id: 2, titulo: 'Distancia entre dos puntos UTM', nivel: 'Básico',
+        enunciado: 'Calcula la distancia entre \\(A(517178{,}087;\\ 9757860{,}897)\\) y \\(B(517523{,}755;\\ 9758145{,}868)\\).',
+        pasos: [
+          { header: 'Paso 1 — Fórmula', content: 'La distancia euclidiana entre dos puntos es:\n\\[d = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}\\]' },
+          { header: 'Paso 2 — Diferencias', content: '\\[\\Delta x = 517523{,}755 - 517178{,}087 = 345{,}668\\]\n\\[\\Delta y = 9758145{,}868 - 9757860{,}897 = 284{,}971\\]' },
+          { header: 'Paso 3 — Cuadrados', content: '\\[\\Delta x^2 = (345{,}668)^2 = 119\\,486{,}57\\]\n\\[\\Delta y^2 = (284{,}971)^2 = 81\\,208{,}45\\]' },
+          { header: 'Paso 4 — Resultado', content: '\\[d = \\sqrt{119\\,486{,}57 + 81\\,208{,}45} = \\sqrt{200\\,695{,}02} \\approx 447{,}99\\ \\text{m}\\]' }
+        ],
+        graphicDesc: ['Puntos A y B marcados.', 'Componentes Δx y Δy.', 'Cuadrados resaltados.', 'Segmento AB trazado.']
+      },
+      {
+        id: 3, titulo: 'Verificación de un punto sobre la circunferencia', nivel: 'Básico',
+        enunciado: 'Dada la circunferencia \\((x - 512998{,}248)^2 + (y - 9668098{,}530)^2 = 4179{,}84^2\\), verifica si el punto \\(A(517178{,}087;\\ 9757860{,}897)\\) pertenece a ella.',
+        pasos: [
+          { header: 'Paso 1 — Sustituir', content: 'Reemplazamos \\(x\\) e \\(y\\) por las coordenadas de \\(A\\):\n\\[(517178{,}087 - 512998{,}248)^2 + (9757860{,}897 - 9668098{,}530)^2 = r^2\\]' },
+          { header: 'Paso 2 — Calcular diferencias', content: '\\[\\Delta x = 4179{,}839\\]\n\\[\\Delta y = 89762{,}367\\]' },
+          { header: 'Paso 3 — Sumar cuadrados', content: '\\[(4179{,}839)^2 + (89762{,}367)^2 = 17\\,471\\,053 + 8\\,057\\,282\\,529 = 8\\,074\\,753\\,582\\]' },
+          { header: 'Paso 4 — Comparar con r²', content: '\\[r^2 = (4179{,}84)^2 = 17\\,470\\,298\\]\nDiscrepancia: el documento original contiene un error de transcripción en el valor de \\(h\\). Revisa el análisis pedagógico.' }
+        ],
+        graphicDesc: ['Circunferencia con centro marcado.', 'Trazo del radio hasta A.', 'Cálculo de cuadrados.', 'Veredicto final.']
+      },
+      {
+        id: 4, titulo: 'Radio desde el centro y un punto', nivel: 'Básico',
+        enunciado: 'Si el centro de una circunferencia es \\(C(513000;\\ 9668000)\\) y un punto de la misma es \\(P(517178;\\ 9757861)\\), calcula el radio.',
+        pasos: [
+          { header: 'Paso 1 — Fórmula del radio', content: '\\[r = \\sqrt{(x_P - h)^2 + (y_P - k)^2}\\]' },
+          { header: 'Paso 2 — Sustituir', content: '\\[r = \\sqrt{(517178 - 513000)^2 + (9757861 - 9668000)^2}\\]' },
+          { header: 'Paso 3 — Diferencias', content: '\\[r = \\sqrt{(4178)^2 + (89861)^2}\\]\n\\[r = \\sqrt{17\\,455\\,684 + 8\\,074\\,989\\,321}\\]' },
+          { header: 'Paso 4 — Resultado', content: '\\[r \\approx \\sqrt{8\\,092\\,445\\,005} \\approx 90\\,069{,}1\\ \\text{m}\\]' }
+        ],
+        graphicDesc: ['Centro C marcado.', 'Punto P trazado.', 'Línea recta entre C y P.', 'Etiqueta del radio.']
+      },
+      {
+        id: 5, titulo: 'Reducción del sistema 2x2 por sustracción', nivel: 'Intermedio',
+        enunciado: 'A partir de las 3 ecuaciones de circunferencia para los puntos \\(A, B, C\\), deduce el sistema lineal 2×2 que permite encontrar el centro.',
+        pasos: [
+          { header: 'Paso 1 — Tres ecuaciones', content: '\\[(x_1 - h)^2 + (y_1 - k)^2 = r^2\\]\n\\[(x_2 - h)^2 + (y_2 - k)^2 = r^2\\]\n\\[(x_3 - h)^2 + (y_3 - k)^2 = r^2\\]' },
+          { header: 'Paso 2 — Restar ec. 2 - ec. 1', content: 'Expandiendo y restando:\n\\[2(x_2 - x_1)h + 2(y_2 - y_1)k = x_2^2 + y_2^2 - x_1^2 - y_1^2\\]' },
+          { header: 'Paso 3 — Restar ec. 3 - ec. 1', content: '\\[2(x_3 - x_1)h + 2(y_3 - y_1)k = x_3^2 + y_3^2 - x_1^2 - y_1^2\\]' },
+          { header: 'Paso 4 — Sistema final', content: 'Llegamos al sistema 2×2:\n\\[\\begin{cases} 691{,}336\\,h + 569{,}942\\,k = 5\\,919\\,169\\,809{,}838 \\\\ 1393{,}446\\,h + 1229{,}366\\,k = 12\\,717\\,509\\,490{,}822 \\end{cases}\\]' }
+        ],
+        graphicDesc: ['Tres puntos A, B, C marcados.', 'Se ilumina el par AB.', 'Se ilumina el par AC.', 'Sistema 2×2 resultante.']
+      },
+      {
+        id: 6, titulo: 'Determinante principal por Cramer', nivel: 'Intermedio',
+        enunciado: 'Calcula el determinante principal \\(D\\) del sistema 2×2 obtenido a partir de los puntos \\(A, B, C\\).',
+        pasos: [
+          { header: 'Paso 1 — Matriz de coeficientes', content: '\\[D = \\begin{vmatrix} 691{,}336 & 569{,}942 \\\\ 1393{,}446 & 1229{,}366 \\end{vmatrix}\\]' },
+          { header: 'Paso 2 — Fórmula 2×2', content: '\\[D = a \\cdot d - b \\cdot c\\]' },
+          { header: 'Paso 3 — Sustitución', content: '\\[D = (691{,}336)(1229{,}366) - (1393{,}446)(569{,}942)\\]\n\\[D = 849\\,904{,}973 - 794\\,183{,}400\\]' },
+          { header: 'Paso 4 — Resultado', content: '\\[D = 55\\,721{,}573\\]\nComo \\(D \\neq 0\\), el sistema tiene solución única.' }
+        ],
+        graphicDesc: ['Matriz 2×2 visualizada.', 'Flecha diagonal principal.', 'Flecha diagonal secundaria.', 'Resultado D destacado.']
+      },
+      {
+        id: 7, titulo: 'Determinantes Dh y Dk', nivel: 'Intermedio',
+        enunciado: 'Con el sistema anterior, calcula los determinantes \\(D_h\\) y \\(D_k\\) sustituyendo la columna correspondiente por los términos independientes.',
+        pasos: [
+          { header: 'Paso 1 — D_h', content: '\\[D_h = \\begin{vmatrix} 5\\,919\\,169\\,809{,}838 & 569{,}942 \\\\ 12\\,717\\,509\\,490{,}822 & 1229{,}366 \\end{vmatrix}\\]' },
+          { header: 'Paso 2 — Calcular D_h', content: '\\[D_h = (5\\,919\\,169\\,809{,}838)(1229{,}366) - (12\\,717\\,509\\,490{,}822)(569{,}942)\\]\n\\[D_h = 7\\,276\\,826\\,204\\,476 - 7\\,248\\,241\\,135\\,160 = 28\\,585\\,069\\,316\\]' },
+          { header: 'Paso 3 — D_k', content: '\\[D_k = \\begin{vmatrix} 691{,}336 & 5\\,919\\,169\\,809{,}838 \\\\ 1393{,}446 & 12\\,717\\,509\\,490{,}822 \\end{vmatrix}\\]' },
+          { header: 'Paso 4 — Calcular D_k', content: '\\[D_k = (691{,}336)(12\\,717\\,509\\,490{,}822) - (1393{,}446)(5\\,919\\,169\\,809{,}838)\\]\n\\[D_k \\approx 538\\,724\\,677\\,829\\]' }
+        ],
+        graphicDesc: ['Matriz D_h con columna de términos independientes.', 'Cálculo visual de D_h.', 'Matriz D_k con columna sustituida.', 'Cálculo visual de D_k.']
+      },
+      {
+        id: 8, titulo: 'Centro de la circunferencia por Cramer', nivel: 'Intermedio',
+        enunciado: 'Obtén las coordenadas del centro \\((h, k)\\) dividiendo los determinantes \\(D_h\\) y \\(D_k\\) entre \\(D\\).',
+        pasos: [
+          { header: 'Paso 1 — Fórmula de Cramer', content: '\\[h = \\dfrac{D_h}{D} \\qquad k = \\dfrac{D_k}{D}\\]' },
+          { header: 'Paso 2 — Calcular h', content: '\\[h = \\dfrac{28\\,585\\,069\\,316}{55\\,721{,}573} = 512\\,998{,}248\\]' },
+          { header: 'Paso 3 — Calcular k', content: '\\[k = \\dfrac{538\\,724\\,677\\,829}{55\\,721{,}573} = 9\\,668\\,098{,}530\\]' },
+          { header: 'Paso 4 — Centro', content: '\\[C = (512\\,998{,}248;\\ 9\\,668\\,098{,}530)\\]\nAhora podemos calcular el radio para cualquier punto de paso.' }
+        ],
+        graphicDesc: ['Fórmula general de Cramer.', 'Sustitución numérica de h.', 'Sustitución numérica de k.', 'Punto C marcado en el plano.']
+      },
+      {
+        id: 9, titulo: 'Reconstrucción completa con 3 puntos', nivel: 'Avanzado',
+        enunciado: 'Reconstruye la circunferencia que pasa por los puntos \\(A(517178{,}087;\\ 9757860{,}897)\\), \\(B(517523{,}755;\\ 9758145{,}868)\\) y \\(C(517874{,}810;\\ 9758475{,}680)\\). Halla centro y radio.',
+        pasos: [
+          { header: 'Paso 1 — Plantear sistema', content: 'Sustituir cada punto en \\((x-h)^2 + (y-k)^2 = r^2\\).' },
+          { header: 'Paso 2 — Reducir a 2×2', content: 'Por sustracción de ecuaciones obtenemos:\n\\[\\begin{cases} 691{,}336\\,h + 569{,}942\\,k = 5\\,919\\,169\\,809{,}838 \\\\ 1393{,}446\\,h + 1229{,}366\\,k = 12\\,717\\,509\\,490{,}822 \\end{cases}\\]' },
+          { header: 'Paso 3 — Cramer', content: '\\[D = 55\\,721{,}573\\]\n\\[h = 512\\,998{,}248 \\qquad k = 9\\,668\\,098{,}530\\]' },
+          { header: 'Paso 4 — Radio', content: '\\[r = \\sqrt{(517178{,}087 - 512998{,}248)^2 + (9757860{,}897 - 9668098{,}530)^2}\\]\n\\[r \\approx 4\\,179{,}84\\ \\text{m}\\]' }
+        ],
+        graphicDesc: ['Tres puntos A, B, C marcados.', 'Sistema 2×2 visualizado.', 'Centro C encontrado.', 'Circunferencia completa trazada.']
+      },
+      {
+        id: 10, titulo: 'Conversión geográficas → UTM', nivel: 'Avanzado',
+        enunciado: 'Convierte las coordenadas geográficas \\((\\text{lat} = -2{,}1906897°,\\ \\text{lon} = -80{,}8455129°)\\) del punto \\(A\\) a UTM (zona 17S).',
+        pasos: [
+          { header: 'Paso 1 — Identificar zona', content: 'Ecuador continental está en zonas UTM 17S y 18S. Longitud \\(-80{,}84°\\) corresponde a zona 17S.' },
+          { header: 'Paso 2 — Parámetros WGS84', content: '\\[a = 6\\,378\\,137{,}0\\ \\text{m} \\quad f = 1/298{,}257223563\\]\n\\[k_0 = 0{,}9996\\]' },
+          { header: 'Paso 3 — Fórmulas de Karney', content: 'Aplicamos las series de Karney con \\(n = f/(2-f)\\). El cálculo es complejo pero estándar.' },
+          { header: 'Paso 4 — Resultado', content: '\\[E \\approx 517\\,178\\ \\text{m} \\qquad N \\approx 9\\,757\\,861\\ \\text{m}\\]\nCoincide con los datos del trabajo grupal.' }
+        ],
+        graphicDesc: ['Mapa esquemático con punto geográfico.', 'Sistema UTM 17S visualizado.', 'Proyección del punto al plano.', 'Coordenadas finales resaltadas.']
+      },
+      {
+        id: 11, titulo: 'Elementos de curva circular simple', nivel: 'Avanzado',
+        enunciado: 'Para una curva circular con radio \\(R = 4180\\ \\text{m}\\) y ángulo de deflexión \\(\\Delta = 5°\\), calcula tangente, externa, ordenada media, longitud de arco y cuerda larga.',
+        pasos: [
+          { header: 'Paso 1 — Datos', content: '\\[R = 4180\\ \\text{m} \\qquad \\Delta = 5°\\]\n\\[\\Delta_{rad} = 0{,}0873\\]' },
+          { header: 'Paso 2 — Tangente', content: '\\[T = R \\tan(\\Delta/2) = 4180 \\cdot \\tan(2{,}5°) \\approx 182{,}6\\ \\text{m}\\]' },
+          { header: 'Paso 3 — Externa y ordenada', content: '\\[E = R\\left(\\dfrac{1}{\\cos(\\Delta/2)} - 1\\right) \\approx 3{,}99\\ \\text{m}\\]\n\\[M = R\\left(1 - \\cos(\\Delta/2)\\right) \\approx 3{,}98\\ \\text{m}\\]' },
+          { header: 'Paso 4 — Arco y cuerda', content: '\\[L = R \\cdot \\Delta_{rad} \\approx 364{,}9\\ \\text{m}\\]\n\\[C_l = 2R\\sin(\\Delta/2) \\approx 364{,}7\\ \\text{m}\\]' }
+        ],
+        graphicDesc: ['PI, PC, PT marcados sobre una línea recta.', 'Trazado de la tangente T.', 'Marcado de externa E y ordenada M.', 'Arco y cuerda larga sobrepuestos.']
+      },
+      {
+        id: 12, titulo: 'Detección de errores — análisis crítico', nivel: 'Avanzado',
+        enunciado: 'El documento original del trabajo grupal reporta \\(r = 474\\,447{,}435\\ \\text{m}\\) para el punto \\(A\\). Identifica el error y calcula el valor correcto.',
+        pasos: [
+          { header: 'Paso 1 — Identificar la inconsistencia', content: 'Un radio de 474 km para una curva de carretera es absurdo. Debe haber un error de transcripción.' },
+          { header: 'Paso 2 — Rastrear el origen', content: 'En la página 3 se obtuvo correctamente \\(h = 512\\,998{,}248\\). Sin embargo, en la página 5 se escribió:\n\\[r = \\sqrt{(517178{,}087 - \\underbrace{51\\,299{,}248}_{\\text{falta dígito }8})^2 + \\dots}\\]' },
+          { header: 'Paso 3 — Recalcular', content: 'Con el valor correcto \\(h = 512\\,998{,}248\\):\n\\[r = \\sqrt{(517178{,}087 - 512998{,}248)^2 + (9757860{,}897 - 9668098{,}530)^2}\\]' },
+          { header: 'Paso 4 — Resultado correcto', content: '\\[r \\approx 4\\,179{,}84\\ \\text{m}\\]\nLos tres puntos dan el mismo radio, confirmando que pertenecen a la misma circunferencia.' }
+        ],
+        graphicDesc: ['Comparación visual: valor erróneo vs. correcto.', 'Señalización del dígito faltante.', 'Recálculo paso a paso.', 'Verificación final con los 3 puntos.']
+      }
+    ];
+
+    const EJERCICIOS_PROPUESTOS = [
+      {
+        id: 1, titulo: 'Radio desde centro y punto', nivel: 'Básico',
+        enunciado: 'Una circunferencia tiene centro en \\((1000, 2000)\\) y pasa por \\((1500, 2000)\\). ¿Cuál es su radio?',
+        pista: 'La distancia entre el centro y cualquier punto de la circunferencia es el radio.',
+        proceso: [
+          { header: 'Paso 1 — Fórmula del radio', content: 'El radio es la distancia entre el centro \\((h,k)\\) y cualquier punto \\((x,y)\\) de la circunferencia:\n\\[r = \\sqrt{(x-h)^2 + (y-k)^2}\\]' },
+          { header: 'Paso 2 — Sustituir valores', content: 'Con \\(h=1000, k=2000, x=1500, y=2000\\):\n\\[r = \\sqrt{(1500-1000)^2 + (2000-2000)^2}\\]' },
+          { header: 'Paso 3 — Calcular diferencias', content: '\\[r = \\sqrt{(500)^2 + (0)^2} = \\sqrt{250000 + 0}\\]' },
+          { header: 'Paso 4 — Resultado', content: '\\[r = \\sqrt{250000} = 500\\ \\text{m}\\]' }
+        ],
+        solucion: '\\[r = 500\\ \\text{m}\\]'
+      },
+      {
+        id: 2, titulo: 'Pertenece o no pertenece', nivel: 'Básico',
+        enunciado: '¿Pertenece el punto \\((4, 3)\\) a la circunferencia \\((x-1)^2 + (y-2)^2 = 10\\)?',
+        pista: 'Sustituye x e y en la ecuación y verifica la igualdad.',
+        proceso: [
+          { header: 'Paso 1 — Sustituir', content: 'Reemplazamos \\(x=4, y=3\\) en la ecuación:\n\\[(4-1)^2 + (3-2)^2 = 10\\]' },
+          { header: 'Paso 2 — Calcular', content: '\\[(3)^2 + (1)^2 = 9 + 1 = 10\\]' },
+          { header: 'Paso 3 — Comparar', content: 'La suma \\(= 10\\) coincide con el \\(r^2 = 10\\) de la ecuación.' }
+        ],
+        solucion: '\\[\\text{Sí pertenece, ya que } 9 + 1 = 10\\]'
+      },
+      {
+        id: 3, titulo: 'Centro y radio desde ecuación general', nivel: 'Básico',
+        enunciado: 'Dada \\(x^2 + y^2 - 6x + 8y - 11 = 0\\), encuentra centro y radio.',
+        pista: 'Completa cuadrados en x y en y.',
+        proceso: [
+          { header: 'Paso 1 — Agrupar', content: '\\[(x^2 - 6x) + (y^2 + 8y) = 11\\]' },
+          { header: 'Paso 2 — Completar cuadrados', content: '\\[(x^2 - 6x + 9 - 9) + (y^2 + 8y + 16 - 16) = 11\\]\n\\[(x-3)^2 - 9 + (y+4)^2 - 16 = 11\\]' },
+          { header: 'Paso 3 — Simplificar', content: '\\[(x-3)^2 + (y+4)^2 = 11 + 9 + 16 = 36\\]' },
+          { header: 'Paso 4 — Identificar', content: 'Centro \\(h=3, k=-4\\), radio \\(r=\\sqrt{36}=6\\)' }
+        ],
+        solucion: '\\[\\text{Centro } (3, -4),\\ \\text{radio } 6\\]'
+      },
+      {
+        id: 4, titulo: 'Distancia entre dos puntos', nivel: 'Básico',
+        enunciado: 'Calcula la distancia entre \\((2, 3)\\) y \\((5, 7)\\).',
+        pista: 'Aplica la fórmula euclidiana.',
+        proceso: [
+          { header: 'Paso 1 — Fórmula', content: '\\[d = \\sqrt{(x_2-x_1)^2 + (y_2-y_1)^2}\\]' },
+          { header: 'Paso 2 — Sustituir', content: '\\[d = \\sqrt{(5-2)^2 + (7-3)^2} = \\sqrt{3^2 + 4^2}\\]' },
+          { header: 'Paso 3 — Resultado', content: '\\[d = \\sqrt{9 + 16} = \\sqrt{25} = 5\\]' }
+        ],
+        solucion: '\\[d = 5\\]'
+      },
+      {
+        id: 5, titulo: 'Sistema 2×2 por sustracción', nivel: 'Intermedio',
+        enunciado: 'Dados tres puntos colineales, ¿existe una circunferencia que pase por los tres?',
+        pista: 'Calcula el determinante principal del sistema lineal.',
+        proceso: [
+          { header: 'Paso 1 — Plantear sistema', content: 'Para 3 puntos \\((x_1,y_1), (x_2,y_2), (x_3,y_3)\\):\n\\[\\begin{cases} 2(x_2-x_1)h + 2(y_2-y_1)k = x_2^2+y_2^2-x_1^2-y_1^2 \\\\ 2(x_3-x_1)h + 2(y_3-y_1)k = x_3^2+y_3^2-x_1^2-y_1^2 \\end{cases}\\]' },
+          { header: 'Paso 2 — Determinante', content: 'Si los puntos son colineales, las filas del sistema son proporcionales y \\(D = 0\\).' },
+          { header: 'Paso 3 — Conclusión', content: 'Si \\(D = 0\\), el sistema no tiene solución única: no existe circunferencia finita.' }
+        ],
+        solucion: '\\[\\text{No existe circunferencia (radio infinito, curva recta)}\\]'
+      },
+      {
+        id: 6, titulo: 'Determinante de un sistema 2×2', nivel: 'Intermedio',
+        enunciado: 'Calcula \\(D = \\begin{vmatrix} 3 & 2 \\\\ 1 & 4 \\end{vmatrix}\\).',
+        pista: 'Aplica la regla Sarrus para 2×2: ad - bc.',
+        proceso: [
+          { header: 'Paso 1 — Fórmula', content: 'Para \\(\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}\\), el determinante es \\(D = ad - bc\\).' },
+          { header: 'Paso 2 — Identificar', content: 'Aquí \\(a=3, b=2, c=1, d=4\\)' },
+          { header: 'Paso 3 — Sustituir', content: '\\[D = (3)(4) - (2)(1) = 12 - 2 = 10\\]' }
+        ],
+        solucion: '\\[D = 10\\]'
+      },
+      {
+        id: 7, titulo: 'Cramer — resolver sistema', nivel: 'Intermedio',
+        enunciado: 'Resuelve \\(\\begin{cases} 2x + y = 5 \\\\ x + 3y = 10 \\end{cases}\\) por Cramer.',
+        pista: 'Calcula D, Dx, Dy y divide.',
+        proceso: [
+          { header: 'Paso 1 — Determinante principal', content: '\\[D = \\begin{vmatrix} 2 & 1 \\\\ 1 & 3 \\end{vmatrix} = (2)(3) - (1)(1) = 6 - 1 = 5\\]' },
+          { header: 'Paso 2 — D_x', content: '\\[D_x = \\begin{vmatrix} 5 & 1 \\\\ 10 & 3 \\end{vmatrix} = (5)(3) - (1)(10) = 15 - 10 = 5\\]' },
+          { header: 'Paso 3 — D_y', content: '\\[D_y = \\begin{vmatrix} 2 & 5 \\\\ 1 & 10 \\end{vmatrix} = (2)(10) - (5)(1) = 20 - 5 = 15\\]' },
+          { header: 'Paso 4 — Solución', content: '\\[x = D_x/D = 5/5 = 1\\]\n\\[y = D_y/D = 15/5 = 3\\]' }
+        ],
+        solucion: '\\[x = 1,\\ y = 3\\]'
+      },
+      {
+        id: 8, titulo: 'Tangente de curva circular', nivel: 'Intermedio',
+        enunciado: 'Para \\(R = 500\\ \\text{m}\\) y \\(\\Delta = 10°\\), calcula la tangente.',
+        pista: '\\(T = R \\tan(\\Delta/2)\\).',
+        proceso: [
+          { header: 'Paso 1 — Fórmula', content: '\\[T = R \\cdot \\tan(\\Delta/2)\\]' },
+          { header: 'Paso 2 — Sustituir', content: 'Con \\(R=500\\) m y \\(\\Delta=10°\\):\n\\[T = 500 \\cdot \\tan(10°/2) = 500 \\cdot \\tan(5°)\\]' },
+          { header: 'Paso 3 — Calcular', content: '\\[\\tan(5°) \\approx 0{,}0875\\]\n\\[T = 500 \\times 0{,}0875 \\approx 43{,}75\\ \\text{m}\\]' }
+        ],
+        solucion: '\\[T \\approx 43{,}75\\ \\text{m}\\]'
+      },
+      {
+        id: 9, titulo: 'Reconstrucción con 3 puntos', nivel: 'Avanzado',
+        enunciado: 'Reconstruye la circunferencia que pasa por \\((0,0), (4,0), (0,4)\\).',
+        pista: 'Plantea el sistema 2×2 y aplica Cramer.',
+        proceso: [
+          { header: 'Paso 1 — Plantear 3 ecuaciones', content: 'Sustituyendo en \\((x-h)^2 + (y-k)^2 = r^2\\):\n\\[(0-h)^2 + (0-k)^2 = r^2\\]\n\\[(4-h)^2 + (0-k)^2 = r^2\\]\n\\[(0-h)^2 + (4-k)^2 = r^2\\]' },
+          { header: 'Paso 2 — Restar E2-E1', content: '\\[(4-h)^2 - (0-h)^2 = 0 \\Rightarrow 16 - 8h = 0 \\Rightarrow h = 2\\]' },
+          { header: 'Paso 3 — Restar E3-E1', content: '\\[(4-k)^2 - (0-k)^2 = 0 \\Rightarrow 16 - 8k = 0 \\Rightarrow k = 2\\]' },
+          { header: 'Paso 4 — Calcular radio', content: 'Con \\(h=2, k=2\\) y el punto \\((0,0)\\):\n\\[r = \\sqrt{(0-2)^2 + (0-2)^2} = \\sqrt{4+4} = \\sqrt{8} = 2\\sqrt{2}\\]' }
+        ],
+        solucion: '\\[\\text{Centro } (2, 2),\\ \\text{radio } 2\\sqrt{2} \\approx 2{,}83\\]'
+      },
+      {
+        id: 10, titulo: 'Conversión aproximada geo→UTM', nivel: 'Avanzado',
+        enunciado: 'Explica por qué Ecuador continental se divide en zonas UTM 17S y 18S.',
+        pista: 'Cada zona UTM cubre 6° de longitud. Encuentra los meridianos centrales.',
+        proceso: [
+          { header: 'Paso 1 — Sistema UTM', content: 'Cada zona UTM cubre 6° de longitud, numeradas desde el antimeridiano. La zona N cubre de \\((N-1)\\times 6 - 180°\\) a \\(N\\times 6 - 180°\\).' },
+          { header: 'Paso 2 — Zona 17', content: '\\[\\text{Zona 17}: (17-1)\\times 6 - 180 = -84°\\text{ a }(17)\\times 6 - 180 = -78°\\]\nMeridiano central: \\(-81°\\)' },
+          { header: 'Paso 3 — Zona 18', content: '\\[\\text{Zona 18}: -78°\\text{ a }-72°\\]\nMeridiano central: \\(-75°\\)' },
+          { header: 'Paso 4 — Ecuador', content: 'Ecuador continental va de ~\\(-81°\\) a ~\\(-75°\\), atravesando ambas zonas.' }
+        ],
+        solucion: '\\[\\text{Zona 17: } 84°O\\text{–}78°O\\ (\\text{mc } 81°O);\\ \\text{Zona 18: } 78°O\\text{–}72°O\\ (\\text{mc } 75°O)\\]'
+      },
+      {
+        id: 11, titulo: 'Elementos completos de curva', nivel: 'Avanzado',
+        enunciado: 'Para \\(R = 1000\\ \\text{m}\\) y \\(\\Delta = 30°\\), encuentra T, E, M, L y C.',
+        pista: 'Aplica todas las fórmulas de los elementos de curva.',
+        proceso: [
+          { header: 'Paso 1 — Convertir Δ a radianes', content: '\\[\\Delta_{rad} = 30° \\times \\pi/180 = 0{,}5236\\ \\text{rad}\\]' },
+          { header: 'Paso 2 — Tangente T', content: '\\[T = R\\tan(\\Delta/2) = 1000\\tan(15°) = 1000 \\times 0{,}2679 \\approx 267{,}9\\ \\text{m}\\]' },
+          { header: 'Paso 3 — Externa E', content: '\\[E = R(\\sec(\\Delta/2)-1) = 1000(\\sec(15°)-1) = 1000 \\times 0{,}0353 \\approx 34{,}85\\ \\text{m}\\]' },
+          { header: 'Paso 4 — Ordenada M', content: '\\[M = R(1-\\cos(\\Delta/2)) = 1000(1-\\cos(15°)) = 1000 \\times 0{,}0341 \\approx 34{,}08\\ \\text{m}\\]' },
+          { header: 'Paso 5 — Arco L', content: '\\[L = R\\Delta_{rad} = 1000 \\times 0{,}5236 \\approx 523{,}6\\ \\text{m}\\]' },
+          { header: 'Paso 6 — Cuerda C', content: '\\[C = 2R\\sin(\\Delta/2) = 2000\\sin(15°) = 2000 \\times 0{,}2588 \\approx 517{,}6\\ \\text{m}\\]' }
+        ],
+        solucion: '\\[T=267{,}9\\quad E=34{,}85\\quad M=34{,}08\\quad L=523{,}6\\quad C=517{,}6\\]'
+      },
+      {
+        id: 12, titulo: 'Análisis crítico de un trabajo', nivel: 'Avanzado',
+        enunciado: 'Un colega reporta radios distintos para cada punto de una "misma" circunferencia. ¿Qué errores pueden causar esto?',
+        pista: 'Considera errores de cálculo, transcripción y colinealidad.',
+        proceso: [
+          { header: 'Paso 1 — Verificar consistencia', content: 'En una circunferencia real, los tres radios \\(r_A, r_B, r_C\\) deben ser iguales. Si difieren, hay error.' },
+          { header: 'Paso 2 — Posibles causas', content: '(1) Error de transcripción en \\(h\\) o \\(k\\) (como el del trabajo grupal: \\(512998\\) escrito como \\(51299\\))\n(2) Cálculo incorrecto del determinante \\(D\\)\n(3) Puntos casi colineales (sistema mal condicionado)\n(4) Errores de medición topográfica' },
+          { header: 'Paso 3 — Diagnóstico', content: 'Recalcular \\(D, D_h, D_k\\) y verificar que \\(h = D_h/D\\), \\(k = D_k/D\\). Comprobar que \\(r_A = r_B = r_C\\).' },
+          { header: 'Paso 4 — Solución', content: 'Si los errores son de medición, usar regresión circular con más de 3 puntos para minimizar el impacto.' }
+        ],
+        solucion: '\\[\\text{Causas: error de transcripción, cálculo incorrecto, colinealidad, o medición}\\]'
+      }
+    ];
+
+    /* ============================================================
+       STATE FOR INTERACTIVE COMPONENTS
+       ============================================================ */
+    const labState = {
+      pts: [
+        { x: 517178.087, y: 9757860.897, label: 'A' },
+        { x: 517523.755, y: 9758145.868, label: 'B' },
+        { x: 517874.810, y: 9758475.680, label: 'C' }
+      ],
+      dragIdx: null
+    };
+    const ejInteractivosState = { selected: 1, step: 0 };
+    const ejPropuestosState = { openId: null };
+    const elementosState = { radio: 4180, delta: 5 };
+
+    /* ============================================================
+       PANEL RENDERERS
+       ============================================================ */
+    function renderTabIntro() {
+      return `
+        <div class="slide-in space-y-6">
+          <header class="space-y-2">
+            <h2 class="heading-xl font-extrabold"><span class="text-primary-c">Laboratorio</span> interactivo de circunferencias</h2>
+            <p class="text-muted-c" style="max-width: 48rem;">
+              Modifica las coordenadas de los puntos <strong class="text-accent-c">A</strong>, <strong class="text-accent-c">B</strong> y <strong class="text-accent-c">C</strong> escribiendo los valores directamente en los campos, o arrástralos sobre el plano. El sistema muestra paso a paso el cálculo del centro y el radio aplicando la regla de Cramer.
+            </p>
+          </header>
+
+          <div class="grid-2">
+            <div class="glass-card card-pad">
+              <canvas id="canvas-intro" class="canvas-box" role="img" aria-label="Plano interactivo: tres puntos arrastrables A, B y C con la circunferencia que los atraviesa calculada en tiempo real"></canvas>
+              <p class="text-muted-c" style="font-size: 0.75rem; margin-top: 0.75rem; text-align: center;">
+                💡 Arrastra los puntos verdes o edita las coordenadas en el panel derecho. Todos los cálculos se actualizan al instante.
+              </p>
+            </div>
+
+            <aside class="glass-card card-pad space-y-4">
+              <h3 class="heading-lg font-bold" style="display:flex; align-items:center; gap:0.5rem;">
+                <span style="display:inline-block; width:0.5rem; height:0.5rem; border-radius:50%; background:var(--secondary);"></span>
+                Coordenadas editables
+              </h3>
+              <div class="space-y-3" id="lab-inputs"></div>
+              <div class="space-y-3" id="lab-metrics" style="font-size: 0.875rem;"></div>
+              <button id="lab-reset" class="glass-tab nav-btn" style="padding: 0.625rem 1rem;">Reiniciar todos los puntos</button>
+            </aside>
+          </div>
+
+          <div class="grid-md-2">
+            <div class="glass-card card-pad space-y-3">
+              <h3 class="heading-lg font-bold text-accent-c">🌐 Coordenadas geográficas (lat/lon)</h3>
+              <p class="text-muted-c" style="font-size: 0.8rem;">
+                Escribe la latitud y longitud en grados decimales. Se convierten automáticamente a UTM (zona 17S, hemisferio sur).
+              </p>
+              <div id="lab-geo-inputs" class="space-y-2"></div>
+              <button id="lab-geo-apply" class="glass-tab nav-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Convertir a UTM y aplicar</button>
+            </div>
+
+            <div class="glass-card card-pad space-y-3">
+              <h3 class="heading-lg font-bold text-secondary-c">📋 Pegar coordenadas en lote</h3>
+              <p class="text-muted-c" style="font-size: 0.8rem;">
+                Pega 3 puntos (uno por línea) con el formato: <code class="font-mono text-warning-c">X, Y</code> o <code class="font-mono text-warning-c">X Y</code>
+              </p>
+              <textarea id="lab-batch" class="coord-input" rows="4" style="font-family: monospace; resize: vertical;" placeholder="517178.087, 9757860.897&#10;517523.755, 9758145.868&#10;517874.810, 9758475.680"></textarea>
+              <div style="display: flex; gap: 0.5rem;">
+                <button id="lab-batch-apply" class="glass-tab nav-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Aplicar</button>
+                <button id="lab-batch-export" class="glass-tab nav-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Exportar actuales</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card card-pad space-y-3">
+            <h3 class="heading-lg font-bold">Proceso paso a paso — Regla de Cramer</h3>
+            <p class="text-muted-c" style="font-size: 0.875rem;">
+              Sustituye los valores de las coordenadas en cada fórmula. El sistema reemplaza automáticamente los números y muestra el resultado en cada etapa.
+            </p>
+            <div id="lab-proceso" class="space-y-3"></div>
+          </div>
+
+          <div class="glass-card card-pad space-y-3">
+            <h3 class="heading-lg font-bold">¿Qué estás viendo?</h3>
+            <p class="text-muted-c">
+              Cuando se diseña una carretera, los ingenieros topógrafos marcan tres puntos de control sobre el terreno y necesitan reconstruir la curva circular que mejor se ajusta a ellos. Matemáticamente, esto significa encontrar el centro \\((h, k)\\) y el radio \\(r\\) de la circunferencia que pasa por esos tres puntos.
+            </p>
+            <p class="text-muted-c">
+              Como cualquier punto \\((x, y)\\) sobre la circunferencia cumple \\((x - h)^2 + (y - k)^2 = r^2\\), sustituir tres puntos genera tres ecuaciones con tres incógnitas. Restando pares de ecuaciones se obtiene un sistema lineal 2×2 que se resuelve con la regla de Cramer.
+            </p>
+            <div class="formula-box">\\[(x - h)^2 + (y - k)^2 = r^2\\]</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTabClasificacion() {
+      const tipos = [
+        { nombre: 'Curva circular simple', color: 'primary', desc: 'Una sola circunferencia conecta dos tangentes. Es el caso más común en carreteras de baja velocidad y el que se estudia en este panel.', formula: 'R constante', ejemplo: 'Trazado básico en vías rurales' },
+        { nombre: 'Curva compuesta', color: 'secondary', desc: 'Dos o más arcos circulares de distinto radio empalmados en un punto común (CC). Se usa cuando el terreno obliga a ajustar el radio.', formula: 'R₁ ≠ R₂', ejemplo: 'Carreteras de montaña con curvas enlazadas' },
+        { nombre: 'Curva en S (invertida)', color: 'warning', desc: 'Dos curvas circulares de signo opuesto unidas por una corta tangente. Cambia el sentido de la curvatura.', formula: 'Curva izq. + Curva der.', ejemplo: 'Cambio de dirección en autopistas' },
+        { nombre: 'Curva de transición (espiral)', color: 'accent', desc: 'Una clotcoide o espiral conecta la tangente con el arco circular para suavizar la entrada y salida de la curva.', formula: 'R = ∞ → R = cte', ejemplo: 'Autopistas de alta velocidad' }
+      ];
+      const cards = tipos.map(function (t) {
+        return `
+          <article class="glass-card card-pad space-y-3">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <span class="bg-${t.color}-c" style="display:inline-block; width:0.75rem; height:0.75rem; border-radius:50%;" aria-hidden="true"></span>
+              <h3 class="font-bold" style="font-size: 1.125rem;">${t.nombre}</h3>
+            </div>
+            <p class="text-muted-c" style="font-size: 0.875rem;">${t.desc}</p>
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; font-size: 0.75rem;">
+              <span class="font-mono" style="background: rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 9999px;">${t.formula}</span>
+              <span class="text-muted-c" style="background: rgba(255,255,255,0.05); padding: 0.25rem 0.75rem; border-radius: 9999px;">Ej: ${t.ejemplo}</span>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      return `
+        <div class="slide-in space-y-6">
+          <header class="space-y-2">
+            <h2 class="heading-xl font-extrabold"><span class="text-secondary-c">Clasificación</span> de curvas en carreteras</h2>
+            <p class="text-muted-c" style="max-width: 48rem;">
+              Las curvas viales se clasifican según su geometría y su función dentro del trazado. La reconstrucción por tres puntos que estudiaremos corresponde a la curva circular simple.
+            </p>
+          </header>
+          <div class="grid-md-2">${cards}</div>
+          <div class="glass-card card-pad space-y-3">
+            <h3 class="heading-lg font-bold">Niveles de jerarquía</h3>
+            <div class="space-y-3 text-muted-c" style="font-size: 0.875rem;">
+              <p><strong class="text-accent-c">Curva simple:</strong> la unidad básica. Una sola transición entre dos rectas, definida por su radio \\(R\\). En este panel trabajamos exclusivamente con este tipo.</p>
+              <p><strong class="text-secondary-c">Curva compuesta:</strong> combina dos o más radios. Es necesaria cuando el terreno impone restricciones que un único radio no puede satisfacer.</p>
+              <p><strong class="text-warning-c">Curva en S:</strong> aparece cuando el trazado cambia de dirección más de una vez en un tramo corto. Requiere una transición suave entre las dos curvas opuestas.</p>
+              <p><strong class="text-primary-c">Espiral (clotcoide):</strong> empleada en autopistas de alta velocidad. La curvatura aumenta gradualmente desde 0 hasta \\(1/R\\), evitando sacudidas laterales.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTabPropiedades() {
+      // Usar valores reales del trabajo grupal para los ejemplos
+      const A = Core.PUNTOS_TRABAJO.A;   // (517178.087, 9757860.897)
+      const C = Core.RESULTADO_TRABAJO;  // centro y radio ya calculados
+      const h = C.h, k = C.k, r = C.r;
+      const f = function (n) { return Core.fmt(n, 3); };
+
+      // Ejemplo: punto A sobre la circunferencia
+      const dxA = A.x - h, dyA = A.y - k;
+      const verifIzq = dxA * dxA + dyA * dyA;
+      const verifDer = r * r;
+
+      // Para la ecuación expandida: D = -2h, E = -2k, F = h² + k² - r²
+      const D = -2 * h, E = -2 * k, F = h * h + k * k - r * r;
+      // Para el arco: ángulo central = 5° (ejemplo)
+      const thetaDeg = 5, thetaRad = (thetaDeg * Math.PI) / 180;
+      const arco = r * thetaRad;
+      const cuerda = 2 * r * Math.sin(thetaRad / 2);
+
+      const props = [
+        {
+          title: '1. Ecuación general',
+          formula: '\\[(x - h)^2 + (y - k)^2 = r^2\\]',
+          proceso: 'Sustituyendo h=' + f(h) + ', k=' + f(k) + ', r=' + f(r) + ' m:',
+          procesoFormula: '\\[(' + f(A.x) + ' - ' + f(h) + ')^2 + (' + f(A.y) + ' - ' + f(k) + ')^2 = (' + f(r) + ')^2\\]',
+          resultado: '\\[(' + f(dxA) + ')^2 + (' + f(dyA) + ')^2 = ' + f(verifIzq) + ' \\approx ' + f(verifDer) + '\\]',
+          resultadoTxt: '✓ El punto A pertenece a la circunferencia: la suma de cuadrados = r²',
+          desc: 'Define la circunferencia en función de su centro (h, k) y su radio r. Cualquier punto (x, y) que cumpla esta igualdad pertenece a la circunferencia.'
+        },
+        {
+          title: '2. Ecuación expandida',
+          formula: '\\[x^2 + y^2 + Dx + Ey + F = 0\\]',
+          proceso: 'Con los coeficientes D = -2h = ' + f(D) + ', E = -2k = ' + f(E) + ', F = h² + k² - r² = ' + f(F) + ':',
+          procesoFormula: '\\[x^2 + y^2 + (' + f(D) + ')x + (' + f(E) + ')y + (' + f(F) + ') = 0\\]',
+          resultado: '\\[\\text{Donde: } h = -D/2 = ' + f(h) + ',\\ k = -E/2 = ' + f(k) + '\\]',
+          resultadoTxt: '✓ Forma alternativa útil para distinguir circunferencia, elipse o punto según el discriminante.',
+          desc: 'Forma alternativa donde D = -2h, E = -2k y F = h² + k² - r². Útil para distinguir circunferencia, elipse o punto según el discriminante.'
+        },
+        {
+          title: '3. Centro y radio desde la forma expandida',
+          formula: '\\[h = -\\dfrac{D}{2},\\quad k = -\\dfrac{E}{2}\\]\n\\[r = \\sqrt{h^2 + k^2 - F}\\]',
+          proceso: 'Si partimos de la ecuación expandida con D=' + f(D) + ', E=' + f(E) + ', F=' + f(F) + ':',
+          procesoFormula: '\\[h = -\\dfrac{' + f(D) + '}{2} = ' + f(h) + '\\quad k = -\\dfrac{' + f(E) + '}{2} = ' + f(k) + '\\]',
+          resultado: '\\[r = \\sqrt{(' + f(h) + ')^2 + (' + f(k) + ')^2 - (' + f(F) + ')} = ' + f(r) + '\\ \\text{m}\\]',
+          resultadoTxt: '✓ Como h² + k² - F > 0, es una circunferencia real con radio ' + f(r) + ' m',
+          desc: 'Si h² + k² - F > 0 es una circunferencia real. Si es 0, es un punto. Si es negativa, es imaginaria.'
+        },
+        {
+          title: '4. Recta tangente en un punto',
+          formula: '\\[(x_0 - h)(x - h) + (y_0 - k)(y - k) = r^2\\]',
+          proceso: 'Para el punto A(' + f(A.x) + ', ' + f(A.y) + ') sobre la circunferencia de centro (' + f(h) + ', ' + f(k) + '):',
+          procesoFormula: '\\[(' + f(dxA) + ')(x - ' + f(h) + ') + (' + f(dyA) + ')(y - ' + f(k) + ') = ' + f(r * r) + '\\]',
+          resultado: '\\[' + f(dxA) + '\\,x + ' + f(dyA) + '\\,y - ' + f(dxA * h + dyA * k + r * r) + ' = 0\\]',
+          resultadoTxt: '✓ Ecuación de la recta tangente a la circunferencia en el punto A',
+          desc: 'La tangente es perpendicular al radio en el punto de contacto. Esta ecuación permite calcularla directamente.'
+        },
+        {
+          title: '5. Cuerda entre dos puntos',
+          formula: '\\[c = 2r\\sin\\left(\\dfrac{\\theta}{2}\\right)\\]',
+          proceso: 'Para un ángulo central θ = ' + thetaDeg + '° y radio r = ' + f(r) + ' m:',
+          procesoFormula: '\\[c = 2(' + f(r) + ')\\sin\\left(\\dfrac{' + thetaDeg + '°}{2}\\right) = 2(' + f(r) + ')\\sin(' + (thetaDeg / 2) + '°)\\]',
+          resultado: '\\[c = 2 \\times ' + f(r) + ' \\times ' + f(Math.sin(thetaRad / 2)) + ' = ' + f(cuerda) + '\\ \\text{m}\\]',
+          resultadoTxt: '✓ La cuerda de ' + thetaDeg + '° en esta circunferencia mide ' + f(cuerda) + ' m',
+          desc: 'Donde θ es el ángulo central subtendido. La cuerda es el segmento rectilíneo que une dos puntos de la circunferencia.'
+        },
+        {
+          title: '6. Longitud de arco',
+          formula: '\\[L = r \\cdot \\theta_{rad}\\]',
+          proceso: 'Para θ = ' + thetaDeg + '° = ' + thetaDeg + ' × π/180 = ' + f(thetaRad) + ' rad y r = ' + f(r) + ' m:',
+          procesoFormula: '\\[L = ' + f(r) + ' \\times ' + f(thetaRad) + '\\]',
+          resultado: '\\[L = ' + f(arco) + '\\ \\text{m}\\]',
+          resultadoTxt: '✓ Longitud del arco de ' + thetaDeg + '° en la circunferencia: ' + f(arco) + ' m',
+          desc: 'Longitud del arco entre dos puntos. En carreteras se usa para medir la longitud real del trazado curvo.'
+        }
+      ];
+      const cards = props.map(function (p) {
+        return `
+          <article class="glass-card card-pad space-y-3">
+            <h3 class="font-bold text-primary-c" style="font-size: 1.125rem;">${p.title}</h3>
+            <div>
+              <div class="coord-col-label" style="text-align:left; margin-bottom:0.3rem;">Fórmula general</div>
+              <div class="formula-box pre-line">${p.formula}</div>
+            </div>
+            <div>
+              <div class="coord-col-label" style="text-align:left; margin-bottom:0.3rem;">Proceso (sustitución con valores reales)</div>
+              <div class="text-muted-c" style="font-size:0.8rem; margin-bottom:0.4rem;">${p.proceso}</div>
+              <div class="formula-box pre-line" style="background: rgba(15, 23, 42, 0.5);">${p.procesoFormula}</div>
+            </div>
+            <div>
+              <div class="coord-col-label" style="text-align:left; margin-bottom:0.3rem; color: var(--accent);">Resultado</div>
+              <div class="formula-box pre-line" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--accent);">${p.resultado}</div>
+              <div class="paso-resultado" style="margin-top:0.4rem;">${p.resultadoTxt}</div>
+            </div>
+            <details style="margin-top:0.5rem;">
+              <summary class="text-muted-c" style="font-size:0.8rem; cursor:pointer;">📖 Explicación teórica</summary>
+              <p class="text-muted-c" style="font-size: 0.875rem; margin-top:0.4rem;">${p.desc}</p>
+            </details>
+          </article>
+        `;
+      }).join('');
+
+      return `
+        <div class="slide-in space-y-6">
+          <header class="space-y-2">
+            <h2 class="heading-xl font-extrabold"><span class="text-primary-c">Propiedades</span> de la circunferencia</h2>
+            <p class="text-muted-c" style="max-width: 48rem;">
+              La circunferencia es el lugar geométrico de los puntos del plano que equidistan de un punto fijo llamado centro. Cada fórmula se muestra con <strong class="text-accent-c">proceso paso a paso</strong> usando valores reales del trabajo grupal: centro <strong>(${f(h)}, ${f(k)})</strong> y radio <strong>${f(r)} m</strong>.
+            </p>
+          </header>
+          <div class="grid-md-2">${cards}</div>
+          <div class="glass-card card-pad space-y-3">
+            <h3 class="heading-lg font-bold">Invariantes</h3>
+            <ul class="clean-list">
+              <li>Todos los puntos de la circunferencia equidistan del centro: esa distancia es el radio.</li>
+              <li>La circunferencia es perfectamente simétrica respecto a cualquier recta que pase por su centro.</li>
+              <li>Tres puntos no colineales determinan una única circunferencia (este es el principio que usamos en el método de Cramer).</li>
+              <li>Si los tres puntos son colineales, el determinante principal \\(D = 0\\) y no existe circunferencia (radio infinito).</li>
+            </ul>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTabElementos() {
+      return `
+        <div class="slide-in space-y-6">
+          <header class="space-y-2">
+            <h2 class="heading-xl font-extrabold"><span class="text-warning-c">Elementos</span> de la curva circular</h2>
+            <p class="text-muted-c" style="max-width: 48rem;">
+              Una curva circular simple en carreteras se describe mediante varios elementos geométricos: tangente, externa, ordenada media, longitud de arco y cuerda larga.
+            </p>
+          </header>
+          <div class="grid-2-rev">
+            <aside class="glass-card card-pad space-y-5">
+              <h3 class="heading-lg font-bold">Parámetros editables</h3>
+              <div class="space-y-4">
+                <div>
+                  <label for="range-radio" style="display:flex; justify-content:space-between; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    <span>Radio R (m)</span>
+                    <span class="text-accent-c font-mono font-bold" id="lab-radio-val">4180 m</span>
+                  </label>
+                  <input id="range-radio" type="range" min="1" max="50000" step="1" value="4180" />
+                  <input id="input-radio" type="number" class="coord-input" value="4180" step="any" min="0" aria-label="Radio R en metros" style="margin-top: 0.5rem;" />
+                </div>
+                <div>
+                  <label for="range-delta" style="display:flex; justify-content:space-between; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    <span>Deflexión Δ (grados)</span>
+                    <span class="text-accent-c font-mono font-bold" id="lab-delta-val">5°</span>
+                  </label>
+                  <input id="range-delta" type="range" min="0.01" max="179.99" step="0.01" value="5" />
+                  <input id="input-delta" type="number" class="coord-input" value="5" step="any" min="0" max="180" aria-label="Ángulo de deflexión en grados" style="margin-top: 0.5rem;" />
+                </div>
+              </div>
+              <div class="formula-box" style="text-align:left; padding: 1rem;">
+                <div style="display:flex; justify-content:space-between; font-size: 0.875rem;">
+                  <span class="text-muted-c">Grado de curvatura G</span>
+                  <span class="font-mono text-warning-c" id="lab-grado">—</span>
+                </div>
+              </div>
+            </aside>
+            <div class="glass-card card-pad">
+              <div class="grid-md-2" id="elementos-metrics"></div>
+              <div id="elementos-proceso" class="space-y-3" style="margin-top: 1rem;"></div>
+            </div>
+          </div>
+          <div class="glass-card card-pad space-y-4">
+            <h3 class="heading-lg font-bold">Puntos característicos</h3>
+            <div class="grid-md-3" style="font-size: 0.875rem;">
+              <div style="background: rgba(255,255,255,0.05); border-radius: 0.75rem; padding: 1rem;">
+                <h4 class="font-bold text-primary-c">PI — Punto de Intersección</h4>
+                <p class="text-muted-c" style="margin-top:0.5rem;">Punto donde se cortan las dos tangentes (prolongación de los tramos rectos). Es el vértice teórico de la curva.</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.05); border-radius: 0.75rem; padding: 1rem;">
+                <h4 class="font-bold text-secondary-c">PC — Principio de Curva</h4>
+                <p class="text-muted-c" style="margin-top:0.5rem;">Punto donde la recta termina y empieza la curva circular. Se mide desde el PI una distancia igual a la tangente \\(T\\).</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.05); border-radius: 0.75rem; padding: 1rem;">
+                <h4 class="font-bold text-accent-c">PT — Principio de Tangente</h4>
+                <p class="text-muted-c" style="margin-top:0.5rem;">Punto donde termina la curva circular y empieza la siguiente recta. También se encuentra a distancia \\(T\\) del PI.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTabIngenieria() {
+      return `
+        <div class="slide-in space-y-6">
+          <header class="space-y-2">
+            <h2 class="heading-xl font-extrabold"><span class="text-accent-c">Aplicación</span> en ingeniería de carreteras</h2>
+            <p class="text-muted-c" style="max-width: 48rem;">
+              Edita cualquier celda de la tabla: longitud, latitud, X o Y. Al cambiar lat/lon se recalculan X/Y automáticamente (UTM zona 17S). Al cambiar X/Y se recalculan el centro y el radio en tiempo real.
+            </p>
+          </header>
+
+          <div class="glass-card card-pad space-y-4">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+              <h3 class="heading-lg font-bold">Caso real de estudio — Tramo vial editable</h3>
+              <div style="display:flex; gap:0.5rem;">
+                <button id="ing-reset" class="glass-tab nav-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Restaurar trabajo grupal</button>
+                <button id="ing-sync-lab" class="glass-tab nav-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem;">↻ Sincronizar con Intro & Lab</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="data-table" id="ing-table">
+                <thead>
+                  <tr>
+                    <th style="width: 3rem;">Punto</th>
+                    <th style="text-align:right;">Longitud (°)</th>
+                    <th style="text-align:right;">Latitud (°)</th>
+                    <th style="text-align:right;">X UTM (m)</th>
+                    <th style="text-align:right;">Y UTM (m)</th>
+                  </tr>
+                </thead>
+                <tbody id="ing-tbody"></tbody>
+              </table>
+            </div>
+            <div class="grid-md-3" style="margin-top: 1rem;" id="ing-result"></div>
+            <div id="ing-proceso" class="space-y-3" style="margin-top: 1rem;"></div>
+          </div>
+
+          <div class="grid-md-2">
+            <div class="glass-card card-pad space-y-3">
+              <h3 class="heading-lg font-bold text-accent-c">✓ Aplicaciones típicas</h3>
+              <ul class="clean-list">
+                <li>Auditoría de trazados existentes sin planos disponibles</li>
+                <li>Reconstrucción geométrica tras deslizamientos o derrumbes</li>
+                <li>Digitalización de vías para Sistemas de Información Geográfica (SIG)</li>
+                <li>Cálculo de sobreanchos y peraltes en curvas</li>
+                <li>Verificación del cumplimiento de normas de diseño vial</li>
+                <li>Estudios de velocidad directriz y distancia de visibilidad</li>
+              </ul>
+            </div>
+            <div class="glass-card card-pad space-y-3">
+              <h3 class="heading-lg font-bold text-warning-c">⚠ Limitaciones y cuidados</h3>
+              <ul class="clean-list">
+                <li>Los tres puntos deben ser no colineales (\\(D \\neq 0\\))</li>
+                <li>Errores de medición topográfica se propagan al centro y al radio</li>
+                <li>Un solo punto mal medido puede desplazar el centro cientos de metros</li>
+                <li>Es recomendable usar más de tres puntos y aplicar regresión circular</li>
+                <li>Las coordenadas UTM deben estar en la misma zona para evitar distorsiones</li>
+                <li>La precisión depende del método de relevamiento (GPS, estación total, etc.)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="glass-card card-pad space-y-3 border-l-danger">
+            <h3 class="heading-lg font-bold text-danger-c">Análisis crítico del documento original</h3>
+            <p class="text-muted-c">
+              El trabajo grupal analizado contiene un <strong class="text-danger-c">error crítico de transcripción</strong> en la página 5: el valor de \\(h = 512\\,998{,}248\\) se copió como \\(51\\,299{,}248\\) (faltó el dígito "8" antes de la coma). Esto produjo un radio absurdo de 474 447 m (¡474 km!) que se "verificó" posteriormente en un cálculo circular erróneo.
+            </p>
+            <p class="text-muted-c">
+              El valor correcto es \\(r \\approx 4\\,179{,}84\\ \\text{m}\\), consistente con los tres puntos. Este caso ilustra la importancia de verificar la coherencia dimensional y de aplicar controles de calidad en cualquier cálculo topográfico.
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ============================================================
+       INGENIERÍA — Estado y renderizado editable
+       ============================================================ */
+    const ingState = {
+      puntos: [
+        { label: 'A', lon: -80.8455129, lat: -2.1906897, x: 517178.087, y: 9757860.897 },
+        { label: 'B', lon: -80.8424045, lat: -2.1881112, x: 517523.755, y: 9758145.868 },
+        { label: 'C', lon: -80.8392477, lat: -2.1851270, x: 517874.810, y: 9758475.680 }
+      ]
+    };
+
+    function renderIngTabla() {
+      const tbody = document.getElementById('ing-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = ingState.puntos.map(function (p, i) {
+        return '<tr>' +
+          '<td class="font-bold text-accent-c" style="padding: 0.5rem 0.5rem;">' +
+            '<input type="text" class="coord-input ing-label" data-idx="' + i + '" value="' + p.label + '" aria-label="Etiqueta del punto ' + (i + 1) + '" style="width: 3rem; text-align: center; padding: 0.4rem;" />' +
+          '</td>' +
+          '<td style="padding: 0.4rem;"><input type="number" class="coord-input ing-lon" data-idx="' + i + '" value="' + p.lon + '" step="any" aria-label="Longitud del punto ' + p.label + '" style="text-align: right;" /></td>' +
+          '<td style="padding: 0.4rem;"><input type="number" class="coord-input ing-lat" data-idx="' + i + '" value="' + p.lat + '" step="any" aria-label="Latitud del punto ' + p.label + '" style="text-align: right;" /></td>' +
+          '<td style="padding: 0.4rem;"><input type="number" class="coord-input ing-x" data-idx="' + i + '" value="' + p.x + '" step="any" aria-label="Coordenada X UTM del punto ' + p.label + '" style="text-align: right;" /></td>' +
+          '<td style="padding: 0.4rem;"><input type="number" class="coord-input ing-y" data-idx="' + i + '" value="' + p.y + '" step="any" aria-label="Coordenada Y UTM del punto ' + p.label + '" style="text-align: right;" /></td>' +
+          '</tr>';
+      }).join('');
+
+      // Enlazar eventos
+      tbody.querySelectorAll('.ing-label').forEach(function (inp) {
+        inp.addEventListener('input', function (e) {
+          const idx = parseInt(e.target.dataset.idx);
+          ingState.puntos[idx].label = e.target.value.substring(0, 3) || '?';
+        });
+      });
+      tbody.querySelectorAll('.ing-lon, .ing-lat').forEach(function (inp) {
+        inp.addEventListener('input', function (e) {
+          const idx = parseInt(e.target.dataset.idx);
+          const lat = parseFloat(tbody.querySelector('.ing-lat[data-idx="' + idx + '"]').value);
+          const lon = parseFloat(tbody.querySelector('.ing-lon[data-idx="' + idx + '"]').value);
+          if (Number.isFinite(lat) && Number.isFinite(lon)) {
+            ingState.puntos[idx].lat = lat;
+            ingState.puntos[idx].lon = lon;
+            // Convertir a UTM automáticamente
+            const utm = Core.geoAUtm(lat, lon, 17, true);
+            if (utm.valido) {
+              ingState.puntos[idx].x = utm.x;
+              ingState.puntos[idx].y = utm.y;
+              // Actualizar inputs X/Y sin disparar eventos
+              const xInput = tbody.querySelector('.ing-x[data-idx="' + idx + '"]');
+              const yInput = tbody.querySelector('.ing-y[data-idx="' + idx + '"]');
+              if (xInput) xInput.value = utm.x;
+              if (yInput) yInput.value = utm.y;
+            }
+            actualizarIngenieria();
+          }
+        });
+      });
+      tbody.querySelectorAll('.ing-x, .ing-y').forEach(function (inp) {
+        inp.addEventListener('input', function (e) {
+          const idx = parseInt(e.target.dataset.idx);
+          const x = parseFloat(tbody.querySelector('.ing-x[data-idx="' + idx + '"]').value);
+          const y = parseFloat(tbody.querySelector('.ing-y[data-idx="' + idx + '"]').value);
+          if (Number.isFinite(x)) ingState.puntos[idx].x = x;
+          if (Number.isFinite(y)) ingState.puntos[idx].y = y;
+          actualizarIngenieria();
+        });
+      });
+
+      actualizarIngenieria();
+    }
+
+    function actualizarIngenieria() {
+      const p = ingState.puntos;
+      const p1 = { x: p[0].x, y: p[0].y };
+      const p2 = { x: p[1].x, y: p[1].y };
+      const p3 = { x: p[2].x, y: p[2].y };
+      const circ = Core.reconstruirCircunferencia(p1, p2, p3);
+
+      const resultDiv = document.getElementById('ing-result');
+      if (resultDiv) {
+        const estado = circ.valida ? 'Válida' : 'Colineales (sin circunferencia)';
+        const estadoColor = circ.valida ? 'var(--accent)' : 'var(--danger)';
+        resultDiv.innerHTML =
+          '<div class="metric-card" style="text-align:center;">' +
+            '<div class="metric-card-label">Centro h</div>' +
+            '<div class="metric-card-value text-primary-c">' + Core.fmt(circ.h, 3) + '</div>' +
+          '</div>' +
+          '<div class="metric-card" style="text-align:center;">' +
+            '<div class="metric-card-label">Centro k</div>' +
+            '<div class="metric-card-value text-secondary-c">' + Core.fmt(circ.k, 3) + '</div>' +
+          '</div>' +
+          '<div class="metric-card" style="text-align:center;">' +
+            '<div class="metric-card-label">Radio</div>' +
+            '<div class="metric-card-value text-warning-c">' + Core.fmt(circ.r, 3) + ' m</div>' +
+          '</div>' +
+          '<div class="metric-card" style="text-align:center; grid-column: span 3;">' +
+            '<div class="metric-card-label">Estado</div>' +
+            '<div class="metric-card-value" style="color: ' + estadoColor + ';">' + estado + '</div>' +
+          '</div>';
+      }
+
+      // Proceso paso a paso
+      const procDiv = document.getElementById('ing-proceso');
+      if (procDiv) {
+        const sistema = Core.construirSistema(p1, p2, p3);
+        const f = function (n) { return Core.fmt(n, 4); };
+        const fs = function (n) { return Core.fmt(n, 6); };
+
+        if (!sistema.valido) {
+          procDiv.innerHTML = `
+            <div class="paso-bloque">
+              <h4><span class="paso-num">!</span>Puntos colineales</h4>
+              <div class="paso-resultado error">D = 0 — Los tres puntos están alineados y no definen una circunferencia.</div>
+            </div>
+          `;
+        } else {
+          const c1 = (p2.x * p2.x + p2.y * p2.y) - (p1.x * p1.x + p1.y * p1.y);
+          const c2 = (p3.x * p3.x + p3.y * p3.y) - (p1.x * p1.x + p1.y * p1.y);
+          procDiv.innerHTML = `
+            <div class="paso-bloque">
+              <h4><span class="paso-num">1</span>Sistema 2×2 (a partir de tus coordenadas)</h4>
+              <div class="paso-formula">${fs(sistema.a1)}·h + ${fs(sistema.b1)}·k = ${fs(c1)}</div>
+              <div class="paso-formula">${fs(sistema.a2)}·h + ${fs(sistema.b2)}·k = ${fs(c2)}</div>
+            </div>
+            <div class="paso-bloque">
+              <h4><span class="paso-num">2</span>Determinantes</h4>
+              <div class="paso-formula">D = ${fs(sistema.D)}    D_h = ${fs(sistema.Dh)}    D_k = ${fs(sistema.Dk)}</div>
+            </div>
+            <div class="paso-bloque">
+              <h4><span class="paso-num">3</span>Centro y radio</h4>
+              <div class="paso-resultado">h = ${fs(sistema.h)},   k = ${fs(sistema.k)}</div>
+              <div class="paso-resultado">r = ${fs(circ.r)} m</div>
+            </div>
+            <div class="paso-bloque" style="border-left-color: var(--accent);">
+              <h4 style="color: var(--accent);"><span class="paso-num" style="background: var(--accent);">✓</span>Ecuación de la circunferencia</h4>
+              <div class="paso-formula" style="text-align:center; font-size: 0.95rem; padding: 0.6rem;">
+                (x − ${fs(sistema.h)})² + (y − ${fs(sistema.k)})² = ${fs(circ.r)}²
+              </div>
+            </div>
+          `;
+        }
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise([procDiv]).catch(function () {});
+        }
+      }
+    }
+
+    function renderTabInteractivos() {
+      const ej = EJERCICIOS_INTERACTIVOS[0];
+      const selectorBtns = EJERCICIOS_INTERACTIVOS.map(function (e) {
+        const dot = e.nivel === 'Básico' ? 'bg-accent-c' : e.nivel === 'Intermedio' ? 'bg-warning-c' : 'bg-danger-c';
+        return `<button class="glass-tab ex-btn" data-ej="${e.id}" data-active="${e.id === 1}">
+          <span class="ex-dot ${dot}" aria-hidden="true"></span>E${e.id}
+        </button>`;
+      }).join('');
+
+      const pasos = ej.pasos.map(function (p, i) {
+        return `<button class="step-btn ${i === 0 ? 'active' : ''}" data-step="${i}">
+          <div class="step-num">Paso ${i + 1} de ${ej.pasos.length}</div>
+          <div class="step-title">${p.header}</div>
+        </button>`;
+      }).join('');
+
+      return `
+        <div class="slide-in space-y-6">
+          <header class="space-y-2">
+            <h2 class="heading-xl font-extrabold">12 <span class="text-primary-c">ejercicios interactivos</span></h2>
+            <p class="text-muted-c" style="max-width: 48rem;">Cada ejercicio se desarrolla paso a paso. El canvas dibuja el estado geométrico correspondiente a cada paso. Puedes editar el contenido de cualquier ejercicio con el botón "✏️ Editar ejercicio".</p>
+          </header>
+          <div class="glass-card card-pad"><div style="display:flex; flex-wrap:wrap; gap:0.5rem;" id="ej-selector">${selectorBtns}</div></div>
+          <div class="grid-2">
+            <div class="glass-card card-pad">
+              <canvas id="canvas-ej" class="canvas-sm" role="img" aria-label="Visualización geométrica del ejercicio"></canvas>
+              <p class="text-muted-c" style="font-size: 0.75rem; margin-top: 0.75rem; text-align: center; font-style: italic;" id="ej-graphic-desc">${ej.graphicDesc[0]}</p>
+            </div>
+            <div class="glass-card card-pad space-y-4">
+              <div>
+                <span class="badge badge-${ej.nivel.toLowerCase()}" id="ej-badge">${ej.nivel}</span>
+                <h3 class="heading-lg font-bold" style="margin-top: 0.5rem;" id="ej-titulo">${ej.titulo}</h3>
+                <p class="text-muted-c" style="font-size: 0.875rem; margin-top: 0.5rem;" id="ej-enunciado">${ej.enunciado}</p>
+              </div>
+              <hr style="border-color: rgba(255,255,255,0.1);">
+              <div class="space-y-3" id="ej-pasos-list" style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">${pasos}</div>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="glass-tab nav-btn" id="ej-prev" disabled>← Anterior</button>
+                <button class="glass-tab nav-btn" id="ej-next">Siguiente →</button>
+                <button class="glass-tab nav-btn" id="ej-edit" style="background: rgba(168, 85, 247, 0.2);">✏️ Editar</button>
+              </div>
+            </div>
+          </div>
+          <div class="glass-card card-pad space-y-3">
+            <h3 class="heading-lg font-bold text-secondary-c" id="ej-step-header">${ej.pasos[0].header}</h3>
+            <div class="text-muted-c pre-line" id="ej-step-content" style="line-height: 1.6;">${ej.pasos[0].content}</div>
+          </div>
+
+          <!-- Editor de ejercicio -->
+          <div class="glass-card card-pad space-y-3" id="ej-editor" style="display:none; border-left: 4px solid var(--secondary);">
+            <h3 class="heading-lg font-bold text-secondary-c">✏️ Editor del ejercicio — Modifica cualquier dato</h3>
+            <p class="text-muted-c" style="font-size: 0.8rem;">Edita los campos y pulsa "Aplicar cambios" para ver el ejercicio actualizado. Los cambios son temporales (se pierden al recargar la página).</p>
+            <div class="space-y-3" id="ej-editor-fields"></div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="glass-tab nav-btn" id="ej-editor-apply" style="background: rgba(16, 185, 129, 0.2); padding: 0.5rem 1rem;">✓ Aplicar cambios</button>
+              <button class="glass-tab nav-btn" id="ej-editor-reset" style="padding: 0.5rem 1rem;">↺ Restaurar original</button>
+              <button class="glass-tab nav-btn" id="ej-editor-cancel" style="padding: 0.5rem 1rem;">✕ Cerrar editor</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTabPropuestos() {
+      const items = EJERCICIOS_PROPUESTOS.map(function (e) {
+        const pasosHTML = (e.proceso || []).map(function (p, i) {
+          return `
+            <div class="paso-bloque" style="margin-top: 0.5rem;">
+              <h4><span class="paso-num">${i + 1}</span>${p.header.replace(/^Paso \d+ — /, '')}</h4>
+              <div class="paso-formula pre-line">${p.content}</div>
+            </div>
+          `;
+        }).join('');
+        return `
+          <article class="glass-card" style="overflow:hidden;">
+            <button class="accordion-trigger" data-prop="${e.id}" aria-expanded="false" aria-controls="prop-content-${e.id}">
+              <span class="badge badge-${e.nivel.toLowerCase()}" style="flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:2.25rem; height:2.25rem; border-radius:0.75rem; padding:0;">${e.id}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                  <h3 class="font-bold" style="font-size: 1rem;">${e.titulo}</h3>
+                  <span class="badge badge-${e.nivel.toLowerCase()}" style="background: rgba(255,255,255,0.05); color: var(--space-text-muted);">${e.nivel}</span>
+                </div>
+                <p class="text-muted-c" style="font-size: 0.875rem; margin-top: 0.25rem;">${e.enunciado}</p>
+              </div>
+              <span class="accordion-chevron" aria-hidden="true">▾</span>
+            </button>
+            <div class="accordion-content" id="prop-content-${e.id}" style="display:none;">
+              <div>
+                <h4 class="text-warning-c" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">💡 Pista</h4>
+                <p class="text-muted-c" style="font-size: 0.875rem;">${e.pista}</p>
+              </div>
+              <div style="margin-top: 0.75rem;">
+                <h4 class="text-primary-c" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">📝 Proceso paso a paso</h4>
+                ${pasosHTML}
+              </div>
+              <div style="margin-top: 0.75rem;">
+                <h4 class="text-accent-c" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">✓ Resultado final</h4>
+                <div class="formula-box" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--accent);">${e.solucion}</div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      return `
+        <div class="slide-in space-y-6">
+          <header class="space-y-2">
+            <h2 class="heading-xl font-extrabold">12 <span class="text-secondary-c">ejercicios propuestos</span></h2>
+            <p class="text-muted-c" style="max-width: 48rem;">Pon a prueba tu dominio. Cada ejercicio incluye <strong class="text-primary-c">proceso paso a paso</strong> y <strong class="text-accent-c">resultado final</strong>. Intenta resolverlo primero por tu cuenta; luego expande para ver el desarrollo completo.</p>
+          </header>
+          <div class="space-y-3" id="prop-list">${items}</div>
+          <div class="glass-card card-pad space-y-3">
+            <h3 class="heading-lg font-bold">Cómo autoevaluarte</h3>
+            <ol class="text-muted-c" style="font-size: 0.875rem; padding-left: 1.5rem;">
+              <li>Lee el enunciado con atención y compáralo con los conceptos de las pestañas anteriores.</li>
+              <li>Intenta resolver el ejercicio sin mirar la pista durante al menos 5 minutos.</li>
+              <li>Si te atascas, abre la pista y vuelve a intentarlo.</li>
+              <li>Cuando tengas tu respuesta, abre el proceso paso a paso y compáralo con el tuyo.</li>
+              <li>Si tu respuesta difiere, vuelve al ejercicio interactivo correspondiente y repasa el método.</li>
+            </ol>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ============================================================
+       RENDER ALL PANELS
+       ============================================================ */
+    function renderAllPanels() {
+      const container = document.getElementById('tab-panels');
+      const panels = TABS.map(function (t) {
+        let html = '';
+        if (t.id === 'intro') html = renderTabIntro();
+        else if (t.id === 'clasificacion') html = renderTabClasificacion();
+        else if (t.id === 'propiedades') html = renderTabPropiedades();
+        else if (t.id === 'elementos') html = renderTabElementos();
+        else if (t.id === 'ingenieria') html = renderTabIngenieria();
+        else if (t.id === 'interactivos') html = renderTabInteractivos();
+        else if (t.id === 'propuestos') html = renderTabPropuestos();
+        return `<section role="tabpanel" id="tabpanel-${t.id}" aria-labelledby="tab-btn-${t.id}" class="tab-panel ${t.id === activeTab ? 'active' : ''}">${html}</section>`;
+      }).join('');
+      container.innerHTML = panels;
+    }
+
+    /* ============================================================
+       CANVAS DRAW: LAB (intro)
+       ============================================================ */
+    function drawIntroLab() {
+      const canvas = document.getElementById('canvas-intro');
+      const pts = labState.pts;
+      const circ = Core.reconstruirCircunferencia(pts[0], pts[1], pts[2]);
+
+      if (canvas) {
+        const { ctx, w, h } = getScaledContext(canvas);
+        ctx.clearRect(0, 0, w, h);
+        drawGrid(ctx, w, h, 30);
+
+        const allX = pts.map(function (p) { return p.x; }).concat([circ.h]);
+        const allY = pts.map(function (p) { return p.y; }).concat([circ.k]);
+        const minX = Math.min.apply(null, allX);
+        const maxX = Math.max.apply(null, allX);
+        const minY = Math.min.apply(null, allY);
+        const maxY = Math.max.apply(null, allY);
+        const span = Math.max(maxX - minX, maxY - minY) * 1.4 || 1000;
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const scale = (Math.min(w, h) - 80) / span;
+        const ox = w / 2, oy = h / 2;
+
+        function toCanvas(wx, wy) {
+          return { x: ox + (wx - cx) * scale, y: oy - (wy - cy) * scale };
+        }
+
+        if (circ.valida && circ.r > 0) {
+          const c = toCanvas(circ.h, circ.k);
+          drawCircle(ctx, c.x, c.y, circ.r * scale, {
+            stroke: '#6366f1', fill: 'rgba(99,102,241,0.08)', lineWidth: 2.5
+          });
+          drawPoint(ctx, { x: c.x, y: c.y, label: 'C', color: '#a855f7' }, { radius: 7 });
+        }
+
+        pts.forEach(function (p) {
+          const cp = toCanvas(p.x, p.y);
+          drawPoint(ctx, { x: cp.x, y: cp.y, label: p.label, color: '#10b981' }, { radius: 7 });
+        });
+
+        if (circ.valida) {
+          const c = toCanvas(circ.h, circ.k);
+          pts.forEach(function (p) {
+            const cp = toCanvas(p.x, p.y);
+            drawLine(ctx, { x: c.x, y: c.y }, { x: cp.x, y: cp.y }, {
+              color: 'rgba(245,158,11,0.6)', lineWidth: 1.5, dashed: true,
+              label: 'r=' + Core.fmt(circ.r, 0) + 'm'
+            });
+          });
+        }
+      }
+
+      // ===== Render inputs editables =====
+      const inputsDiv = document.getElementById('lab-inputs');
+      if (inputsDiv && !inputsDiv.dataset.bound) {
+        inputsDiv.dataset.bound = 'true';
+        inputsDiv.innerHTML = `
+          <div class="coord-row" style="margin-bottom: 0.25rem;">
+            <span></span>
+            <span class="coord-col-label">Eje X</span>
+            <span class="coord-col-label">Eje Y</span>
+          </div>
+          ${pts.map(function (p, i) {
+            return `<div class="coord-row" data-idx="${i}">
+              <span class="coord-label">${p.label}</span>
+              <input type="number" class="coord-input coord-x" data-idx="${i}" value="${p.x}" step="any" aria-label="Coordenada X del punto ${p.label}" placeholder="0" />
+              <input type="number" class="coord-input coord-y" data-idx="${i}" value="${p.y}" step="any" aria-label="Coordenada Y del punto ${p.label}" placeholder="0" />
+            </div>`;
+          }).join('')}
+          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08);">
+            <div class="coord-col-label" style="text-align:left; margin-bottom: 0.5rem;">Ejemplos rápidos</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              <button class="glass-tab ex-btn lab-ejemplo" data-ejemplo="trabajo" style="font-size: 0.7rem; padding: 0.4rem 0.6rem;">Trabajo grupal</button>
+              <button class="glass-tab ex-btn lab-ejemplo" data-ejemplo="simple" style="font-size: 0.7rem; padding: 0.4rem 0.6rem;">Caso simple</button>
+              <button class="glass-tab ex-btn lab-ejemplo" data-ejemplo="colineales" style="font-size: 0.7rem; padding: 0.4rem 0.6rem;">Colineales</button>
+              <button class="glass-tab ex-btn lab-ejemplo" data-ejemplo="aleatorio" style="font-size: 0.7rem; padding: 0.4rem 0.6rem;">Aleatorio</button>
+            </div>
+          </div>
+        `;
+        inputsDiv.querySelectorAll('.coord-input').forEach(function (inp) {
+          // Evento input: actualiza mientras escribe (permite campos vacíos temporalmente)
+          inp.addEventListener('input', function (e) {
+            const idx = parseInt(e.target.dataset.idx);
+            const raw = e.target.value;
+            if (raw === '' || raw === '-' || raw === '.') {
+              // El usuario está borrando/escribiendo — no actualizar todavía
+              return;
+            }
+            const val = parseFloat(raw);
+            if (Number.isFinite(val)) {
+              if (e.target.classList.contains('coord-x')) {
+                labState.pts[idx].x = val;
+              } else {
+                labState.pts[idx].y = val;
+              }
+              // Actualizar canvas y proceso sin re-renderizar inputs
+              actualizarVisualizacion();
+            }
+          });
+          // Al perder el foco, si está vacío, restaurar el valor anterior
+          inp.addEventListener('blur', function (e) {
+            if (e.target.value === '') {
+              const idx = parseInt(e.target.dataset.idx);
+              if (e.target.classList.contains('coord-x')) {
+                e.target.value = labState.pts[idx].x;
+              } else {
+                e.target.value = labState.pts[idx].y;
+              }
+            }
+          });
+          // Teclas Enter y Escape
+          inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+              e.target.blur();
+            } else if (e.key === 'Escape') {
+              const idx = parseInt(e.target.dataset.idx);
+              if (e.target.classList.contains('coord-x')) {
+                e.target.value = labState.pts[idx].x;
+              } else {
+                e.target.value = labState.pts[idx].y;
+              }
+              e.target.blur();
+            }
+          });
+        });
+        // Ejemplos rápidos
+        inputsDiv.querySelectorAll('.lab-ejemplo').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const tipo = btn.dataset.ejemplo;
+            if (tipo === 'trabajo') {
+              labState.pts = [
+                { x: 517178.087, y: 9757860.897, label: 'A' },
+                { x: 517523.755, y: 9758145.868, label: 'B' },
+                { x: 517874.810, y: 9758475.680, label: 'C' }
+              ];
+            } else if (tipo === 'simple') {
+              labState.pts = [
+                { x: 0, y: 0, label: 'A' },
+                { x: 4, y: 0, label: 'B' },
+                { x: 0, y: 4, label: 'C' }
+              ];
+            } else if (tipo === 'colineales') {
+              labState.pts = [
+                { x: 0, y: 0, label: 'A' },
+                { x: 1, y: 1, label: 'B' },
+                { x: 2, y: 2, label: 'C' }
+              ];
+            } else if (tipo === 'aleatorio') {
+              labState.pts = [
+                { x: Math.round((Math.random() * 1000 - 500) * 1000) / 1000, y: Math.round((Math.random() * 1000 - 500) * 1000) / 1000, label: 'A' },
+                { x: Math.round((Math.random() * 1000 - 500) * 1000) / 1000, y: Math.round((Math.random() * 1000 - 500) * 1000) / 1000, label: 'B' },
+                { x: Math.round((Math.random() * 1000 - 500) * 1000) / 1000, y: Math.round((Math.random() * 1000 - 500) * 1000) / 1000, label: 'C' }
+              ];
+            }
+            // Re-render inputs con nuevos valores
+            delete inputsDiv.dataset.bound;
+            inputsDiv.innerHTML = '';
+            drawIntroLab();
+          });
+        });
+      } else if (inputsDiv && inputsDiv.dataset.bound === 'true') {
+        // Actualizar valores de los inputs sin re-renderizar (cuando se arrastra el punto)
+        inputsDiv.querySelectorAll('.coord-input').forEach(function (inp) {
+          const idx = parseInt(inp.dataset.idx);
+          if (inp === document.activeElement) return; // no interrumpir escritura
+          if (inp.classList.contains('coord-x')) {
+            inp.value = labState.pts[idx].x;
+          } else {
+            inp.value = labState.pts[idx].y;
+          }
+        });
+      }
+
+      // Función auxiliar para actualizar solo canvas, métricas y proceso (no inputs)
+      // Definida como función interna para acceso a closures
+      if (!window._actualizarVisualizacion) {
+        window._actualizarVisualizacion = function () {
+          const p = labState.pts;
+          const c = Core.reconstruirCircunferencia(p[0], p[1], p[2]);
+          // Redibujar canvas
+          const canvas2 = document.getElementById('canvas-intro');
+          if (canvas2) {
+            const r = getScaledContext(canvas2);
+            const ctx = r.ctx, w = r.w, h = r.h;
+            ctx.clearRect(0, 0, w, h);
+            drawGrid(ctx, w, h, 30);
+            const allX = p.map(function (pp) { return pp.x; }).concat([c.h]);
+            const allY = p.map(function (pp) { return pp.y; }).concat([c.k]);
+            const minX = Math.min.apply(null, allX);
+            const maxX = Math.max.apply(null, allX);
+            const minY = Math.min.apply(null, allY);
+            const maxY = Math.max.apply(null, allY);
+            const span = Math.max(maxX - minX, maxY - minY) * 1.4 || 1000;
+            const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+            const scale = (Math.min(w, h) - 80) / span;
+            const ox = w / 2, oy = h / 2;
+            function toC(wx, wy) { return { x: ox + (wx - cx) * scale, y: oy - (wy - cy) * scale }; }
+            if (c.valida && c.r > 0) {
+              const cc = toC(c.h, c.k);
+              drawCircle(ctx, cc.x, cc.y, c.r * scale, { stroke: '#6366f1', fill: 'rgba(99,102,241,0.08)', lineWidth: 2.5 });
+              drawPoint(ctx, { x: cc.x, y: cc.y, label: 'C', color: '#a855f7' }, { radius: 7 });
+            }
+            p.forEach(function (pp) {
+              const cp = toC(pp.x, pp.y);
+              drawPoint(ctx, { x: cp.x, y: cp.y, label: pp.label, color: '#10b981' }, { radius: 7 });
+            });
+            if (c.valida) {
+              const cc = toC(c.h, c.k);
+              p.forEach(function (pp) {
+                const cp = toC(pp.x, pp.y);
+                drawLine(ctx, { x: cc.x, y: cc.y }, { x: cp.x, y: cp.y }, {
+                  color: 'rgba(245,158,11,0.6)', lineWidth: 1.5, dashed: true,
+                  label: 'r=' + Core.fmt(c.r, 0) + 'm'
+                });
+              });
+            }
+          }
+          // Actualizar métricas
+          const metricsDiv2 = document.getElementById('lab-metrics');
+          if (metricsDiv2) {
+            const color = c.valida ? 'accent' : 'danger';
+            const estado = c.valida ? 'Válida' : 'Colineales (no circunferencia)';
+            metricsDiv2.innerHTML =
+              '<h4 class="font-semibold text-muted-c" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.5rem;">Resultado</h4>' +
+              metricRow('Centro h', Core.fmt(c.h, 3), 'primary') +
+              metricRow('Centro k', Core.fmt(c.k, 3), 'secondary') +
+              metricRow('Radio r', Core.fmt(c.r, 3) + ' m', 'warning') +
+              metricRow('Estado', estado, color);
+          }
+          // Actualizar proceso paso a paso
+          renderProceso(p, c);
+        };
+      }
+
+      function actualizarVisualizacion() {
+        window._actualizarVisualizacion();
+      }
+
+      // ===== Render métricas =====
+      const metricsDiv = document.getElementById('lab-metrics');
+      if (metricsDiv) {
+        const color = circ.valida ? 'accent' : 'danger';
+        const estado = circ.valida ? 'Válida' : 'Colineales (no circunferencia)';
+        metricsDiv.innerHTML =
+          '<h4 class="font-semibold text-muted-c" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.5rem;">Resultado</h4>' +
+          metricRow('Centro h', Core.fmt(circ.h, 3), 'primary') +
+          metricRow('Centro k', Core.fmt(circ.k, 3), 'secondary') +
+          metricRow('Radio r', Core.fmt(circ.r, 3) + ' m', 'warning') +
+          metricRow('Estado', estado, color);
+      }
+
+      // ===== Render inputs geográficos (lat/lon) =====
+      const geoDiv = document.getElementById('lab-geo-inputs');
+      if (geoDiv && !geoDiv.dataset.bound) {
+        geoDiv.dataset.bound = 'true';
+        // Valores iniciales: corresponder a los puntos actuales (aproximados del trabajo grupal)
+        const geosIniciales = [
+          { lat: -2.1906897, lon: -80.8455129 },
+          { lat: -2.1881112, lon: -80.8424045 },
+          { lat: -2.1851270, lon: -80.8392477 }
+        ];
+        geoDiv.innerHTML = `
+          <div class="coord-row" style="margin-bottom: 0.25rem;">
+            <span></span>
+            <span class="coord-col-label">Latitud</span>
+            <span class="coord-col-label">Longitud</span>
+          </div>
+          ${pts.map(function (p, i) {
+            return `<div class="coord-row">
+              <span class="coord-label">${p.label}</span>
+              <input type="number" class="coord-input geo-lat" data-idx="${i}" value="${geosIniciales[i].lat}" step="any" aria-label="Latitud del punto ${p.label}" />
+              <input type="number" class="coord-input geo-lon" data-idx="${i}" value="${geosIniciales[i].lon}" step="any" aria-label="Longitud del punto ${p.label}" />
+            </div>`;
+          }).join('')}
+        `;
+      }
+
+      // ===== Render proceso paso a paso =====
+      renderProceso(pts, circ);
+    }
+
+    /* ============================================================
+       PROCESO PASO A PASO
+       ============================================================ */
+    function renderProceso(pts, circ) {
+      const cont = document.getElementById('lab-proceso');
+      if (!cont) return;
+
+      const A = pts[0], B = pts[1], C = pts[2];
+      const sistema = Core.construirSistema(A, B, C);
+
+      if (!sistema.valido) {
+        cont.innerHTML = `
+          <div class="paso-bloque">
+            <h4><span class="paso-num">!</span>Puntos colineales</h4>
+            <div class="paso-formula">Los tres puntos están alineados. No definen una circunferencia (el determinante D = 0).</div>
+            <div class="paso-resultado error">D = 0 — No hay solución única</div>
+          </div>
+        `;
+        return;
+      }
+
+      const f = function (n) { return Core.fmt(n, 3); };
+      const fs = function (n) { return Core.fmt(n, 6); };
+
+      // Cálculos intermedios para mostrar
+      const dx12 = B.x - A.x;
+      const dy12 = B.y - A.y;
+      const dx13 = C.x - A.x;
+      const dy13 = C.y - A.y;
+      const c1 = (B.x * B.x + B.y * B.y) - (A.x * A.x + A.y * A.y);
+      const c2 = (C.x * C.x + C.y * C.y) - (A.x * A.x + A.y * A.y);
+
+      const Dh_calc = c1 * sistema.b2 - c2 * sistema.b1;
+      const Dk_calc = sistema.a1 * c2 - sistema.a2 * c1;
+      const h_calc = Dh_calc / sistema.D;
+      const k_calc = Dk_calc / sistema.D;
+
+      // Cálculo del radio con cada punto
+      const rA = circ.r;
+      const dxA = A.x - sistema.h;
+      const dyA = A.y - sistema.k;
+
+      cont.innerHTML = `
+        <div class="paso-bloque">
+          <h4><span class="paso-num">1</span>Plantear las tres ecuaciones de circunferencia</h4>
+          <div class="paso-formula">(x₁ − h)² + (y₁ − k)² = r²   →   (${f(A.x)} − h)² + (${f(A.y)} − k)² = r²</div>
+          <div class="paso-formula">(x₂ − h)² + (y₂ − k)² = r²   →   (${f(B.x)} − h)² + (${f(B.y)} − k)² = r²</div>
+          <div class="paso-formula">(x₃ − h)² + (y₃ − k)² = r²   →   (${f(C.x)} − h)² + (${f(C.y)} − k)² = r²</div>
+        </div>
+
+        <div class="paso-bloque">
+          <h4><span class="paso-num">2</span>Restar ecuaciones para obtener el sistema 2×2</h4>
+          <div class="paso-formula">2(x₂ − x₁)·h + 2(y₂ − y₁)·k = x₂² + y₂² − x₁² − y₁²</div>
+          <div class="paso-formula">2(${f(B.x)} − ${f(A.x)})·h + 2(${f(B.y)} − ${f(A.y)})·k = ${f(B.x)}² + ${f(B.y)}² − ${f(A.x)}² − ${f(A.y)}²</div>
+          <div class="paso-formula">→ ${fs(sistema.a1)}·h + ${fs(sistema.b1)}·k = ${fs(c1)}</div>
+          <div class="paso-formula" style="margin-top:0.5rem;">2(x₃ − x₁)·h + 2(y₃ − y₁)·k = x₃² + y₃² − x₁² − y₁²</div>
+          <div class="paso-formula">2(${f(C.x)} − ${f(A.x)})·h + 2(${f(C.y)} − ${f(A.y)})·k = ${f(C.x)}² + ${f(C.y)}² − ${f(A.x)}² − ${f(A.y)}²</div>
+          <div class="paso-formula">→ ${fs(sistema.a2)}·h + ${fs(sistema.b2)}·k = ${fs(c2)}</div>
+          <div class="paso-resultado">Sistema: { ${fs(sistema.a1)}·h + ${fs(sistema.b1)}·k = ${fs(c1)} ; ${fs(sistema.a2)}·h + ${fs(sistema.b2)}·k = ${fs(c2)} }</div>
+        </div>
+
+        <div class="paso-bloque">
+          <h4><span class="paso-num">3</span>Calcular el determinante principal D</h4>
+          <div class="paso-formula">D = a₁·b₂ − a₂·b₁ = (${fs(sistema.a1)})(${fs(sistema.b2)}) − (${fs(sistema.a2)})(${fs(sistema.b1)})</div>
+          <div class="paso-formula">D = ${fs(sistema.a1 * sistema.b2)} − ${fs(sistema.a2 * sistema.b1)}</div>
+          <div class="paso-resultado">D = ${fs(sistema.D)}  (≠ 0, sistema con solución única)</div>
+        </div>
+
+        <div class="paso-bloque">
+          <h4><span class="paso-num">4</span>Calcular D_h (sustituyendo la columna de h por los términos independientes)</h4>
+          <div class="paso-formula">D_h = c₁·b₂ − c₂·b₁ = (${fs(c1)})(${fs(sistema.b2)}) − (${fs(c2)})(${fs(sistema.b1)})</div>
+          <div class="paso-formula">D_h = ${fs(c1 * sistema.b2)} − ${fs(c2 * sistema.b1)}</div>
+          <div class="paso-resultado">D_h = ${fs(sistema.Dh)}</div>
+        </div>
+
+        <div class="paso-bloque">
+          <h4><span class="paso-num">5</span>Calcular D_k (sustituyendo la columna de k por los términos independientes)</h4>
+          <div class="paso-formula">D_k = a₁·c₂ − a₂·c₁ = (${fs(sistema.a1)})(${fs(c2)}) − (${fs(sistema.a2)})(${fs(c1)})</div>
+          <div class="paso-formula">D_k = ${fs(sistema.a1 * c2)} − ${fs(sistema.a2 * c1)}</div>
+          <div class="paso-resultado">D_k = ${fs(sistema.Dk)}</div>
+        </div>
+
+        <div class="paso-bloque">
+          <h4><span class="paso-num">6</span>Obtener el centro (h, k) dividiendo entre D</h4>
+          <div class="paso-formula">h = D_h / D = ${fs(sistema.Dh)} / ${fs(sistema.D)}</div>
+          <div class="paso-resultado">h = ${fs(sistema.h)}</div>
+          <div class="paso-formula" style="margin-top:0.4rem;">k = D_k / D = ${fs(sistema.Dk)} / ${fs(sistema.D)}</div>
+          <div class="paso-resultado">k = ${fs(sistema.k)}</div>
+          <div class="paso-resultado" style="background: rgba(168, 85, 247, 0.15); border-left-color: var(--secondary); color: var(--secondary);">Centro C = (${fs(sistema.h)} , ${fs(sistema.k)})</div>
+        </div>
+
+        <div class="paso-bloque">
+          <h4><span class="paso-num">7</span>Calcular el radio desde el centro hasta el punto A</h4>
+          <div class="paso-formula">r = √[(x₁ − h)² + (y₁ − k)²]</div>
+          <div class="paso-formula">r = √[(${f(A.x)} − ${fs(sistema.h)})² + (${f(A.y)} − ${fs(sistema.k)})²]</div>
+          <div class="paso-formula">r = √[(${fs(dxA)})² + (${fs(dyA)})²]</div>
+          <div class="paso-formula">r = √[${fs(dxA * dxA)} + ${fs(dyA * dyA)}]</div>
+          <div class="paso-formula">r = √${fs(dxA * dxA + dyA * dyA)}</div>
+          <div class="paso-resultado">r = ${fs(circ.r)} m</div>
+        </div>
+
+        <div class="paso-bloque" style="border-left-color: var(--accent);">
+          <h4 style="color: var(--accent);"><span class="paso-num" style="background: var(--accent);">✓</span>Ecuación final de la circunferencia</h4>
+          <div class="paso-formula" style="text-align:center; font-size: 0.95rem; padding: 0.6rem;">
+            (x − ${fs(sistema.h)})² + (y − ${fs(sistema.k)})² = ${fs(circ.r)}²
+          </div>
+          <div class="paso-resultado" style="background: rgba(16, 185, 129, 0.15);">
+            Centro: (${fs(sistema.h)}, ${fs(sistema.k)})  ·  Radio: ${fs(circ.r)} m
+          </div>
+        </div>
+      `;
+
+      // Re-render MathJax si está cargado
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([cont]).catch(function () {});
+      }
+    }
+
+    function metricRow(label, value, color) {
+      return '<div class="metric-row">' +
+        '<span class="metric-label">' + label + '</span>' +
+        '<span class="metric-value text-' + color + '-c">' + value + '</span>' +
+        '</div>';
+    }
+
+    /* ============================================================
+       CANVAS DRAW: EJERCICIOS INTERACTIVOS
+       ============================================================ */
+    function drawEjercicio() {
+      const canvas = document.getElementById('canvas-ej');
+      if (!canvas) return;
+      const { ctx, w, h } = getScaledContext(canvas);
+      ctx.clearRect(0, 0, w, h);
+      drawGrid(ctx, w, h, 30);
+
+      const cx = w / 2, cy = h / 2;
+      const scale = Math.min(w, h) / 1200;
+      const A = { x: cx - 200 * scale, y: cy + 80 * scale, label: 'A' };
+      const B = { x: cx, y: cy + 40 * scale, label: 'B' };
+      const C = { x: cx + 200 * scale, y: cy, label: 'C' };
+      const centro = { x: cx - 200 * scale, y: cy - 100 * scale, label: 'C' };
+      const r = 220 * scale;
+      const step = ejInteractivosState.step;
+      const id = ejInteractivosState.selected;
+
+      switch (id) {
+        case 1:
+          if (step >= 0) {
+            drawPoint(ctx, centro, { color: '#a855f7', radius: 7 });
+            drawLabelBox(ctx, 'Centro (h, k)', centro.x + 12, centro.y - 14, { color: '#a855f7' });
+          }
+          if (step >= 1) drawLabelBox(ctx, '(x-h)² + (y-k)² = r²', cx - 90, 20, { color: '#6366f1', fontSize: 13 });
+          if (step >= 2) drawPoint(ctx, A, { color: '#10b981', radius: 7 });
+          if (step >= 3) {
+            drawCircle(ctx, centro.x, centro.y, r, { stroke: '#6366f1', fill: 'rgba(99,102,241,0.08)', lineWidth: 2.5 });
+            drawLine(ctx, centro, A, { color: '#f59e0b', dashed: true, label: 'r ≈ ' + Core.fmt(r / scale, 0) });
+          }
+          break;
+        case 2:
+          drawPoint(ctx, A, { color: '#10b981', radius: 7 });
+          if (step >= 1) drawPoint(ctx, B, { color: '#10b981', radius: 7 });
+          if (step >= 2) {
+            ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+            ctx.setLineDash([]);
+            drawLabelBox(ctx, 'Δx', (A.x + B.x) / 2 - 10, A.y + 18, { color: '#a855f7' });
+            drawLabelBox(ctx, 'Δy', B.x + 8, (A.y + B.y) / 2, { color: '#a855f7' });
+          }
+          if (step >= 3) drawLine(ctx, A, B, { color: '#f59e0b', lineWidth: 3, label: 'd = ' + Core.fmt(Math.hypot(B.x - A.x, B.y - A.y) / scale, 1) });
+          break;
+        case 3:
+          drawCircle(ctx, centro.x, centro.y, r, { stroke: '#6366f1', fill: 'rgba(99,102,241,0.05)' });
+          drawPoint(ctx, centro, { color: '#a855f7', radius: 6 });
+          if (step >= 1) drawPoint(ctx, A, { color: '#10b981', radius: 7 });
+          if (step >= 2) drawLine(ctx, centro, A, { color: '#f59e0b', dashed: true });
+          if (step >= 3) drawLabelBox(ctx, step === 3 ? '✓ Verificado' : 'Error grande', A.x - 50, A.y + 25, { color: step === 3 ? '#10b981' : '#f43f5e' });
+          break;
+        case 4:
+          if (step >= 0) drawPoint(ctx, centro, { color: '#a855f7', radius: 7 });
+          if (step >= 1) drawPoint(ctx, A, { color: '#10b981', radius: 7 });
+          if (step >= 2) drawLine(ctx, centro, A, { color: '#a855f7', lineWidth: 2 });
+          if (step >= 3) drawLabelBox(ctx, 'r ≈ ' + Core.fmt(r / scale, 0) + ' m', centro.x + 30, (centro.y + A.y) / 2, { color: '#f59e0b' });
+          break;
+        case 5:
+          drawPoint(ctx, A, { color: '#10b981', radius: 7 });
+          drawPoint(ctx, B, { color: '#10b981', radius: 7 });
+          if (step >= 1) drawPoint(ctx, C, { color: '#10b981', radius: 7 });
+          if (step >= 2) drawLine(ctx, A, B, { color: '#f59e0b', lineWidth: 2.5, label: 'E2 - E1' });
+          if (step >= 3) {
+            drawLine(ctx, A, C, { color: '#a855f7', lineWidth: 2.5, label: 'E3 - E1' });
+            drawLabelBox(ctx, 'Sistema 2×2 listo', cx - 70, 20, { color: '#6366f1' });
+          }
+          break;
+        case 6:
+          if (step >= 0) drawMatrix(ctx, cx, cy, '691,336', '569,942', '1393,446', '1229,366', '#6366f1');
+          if (step >= 1) drawArrow(ctx, cx - 60, cy - 40, cx + 60, cy + 40, '#10b981', 'ad');
+          if (step >= 2) drawArrow(ctx, cx + 60, cy - 40, cx - 60, cy + 40, '#f43f5e', '-bc');
+          if (step >= 3) drawLabelBox(ctx, 'D = 55 721,573', cx - 80, 20, { color: '#10b981', fontSize: 14 });
+          break;
+        case 7:
+          if (step <= 1) {
+            const title = step === 0 ? 'D_h' : 'D_k';
+            const c1 = step === 0 ? '5,9e9' : '691,336';
+            const c2 = step === 0 ? '569,942' : '5,9e9';
+            const c3 = step === 0 ? '1,3e10' : '1393,446';
+            const c4 = step === 0 ? '1229,366' : '1,3e10';
+            drawMatrix(ctx, cx, cy, c1, c2, c3, c4, '#a855f7');
+            drawLabelBox(ctx, title, cx - 20, 20, { color: '#a855f7' });
+          } else {
+            const value = step === 2 ? 'D_h ≈ 2,86e10' : 'D_k ≈ 5,39e11';
+            drawLabelBox(ctx, value, cx - 80, cy, { color: '#10b981', fontSize: 16 });
+          }
+          break;
+        case 8:
+          if (step >= 0) drawLabelBox(ctx, 'h = D_h / D', cx - 70, 20, { color: '#6366f1' });
+          if (step >= 1) drawLabelBox(ctx, 'h = 512 998,248', cx - 90, 60, { color: '#10b981' });
+          if (step >= 2) drawLabelBox(ctx, 'k = 9 668 098,530', cx - 90, 100, { color: '#10b981' });
+          if (step >= 3) drawPoint(ctx, { x: cx, y: cy, label: 'Centro C', color: '#a855f7' }, { radius: 8 });
+          break;
+        case 9:
+          drawPoint(ctx, A, { color: '#10b981', radius: 6 });
+          if (step >= 1) { drawPoint(ctx, B, { color: '#10b981', radius: 6 }); drawPoint(ctx, C, { color: '#10b981', radius: 6 }); }
+          if (step >= 2) {
+            drawPoint(ctx, { x: cx, y: cy - 50, color: '#a855f7' }, { radius: 6 });
+            drawLabelBox(ctx, 'Centro encontrado', cx - 80, cy - 90, { color: '#a855f7' });
+          }
+          if (step >= 3) {
+            drawCircle(ctx, cx, cy - 50, 150, { stroke: '#6366f1', fill: 'rgba(99,102,241,0.1)', lineWidth: 2.5 });
+            drawLabelBox(ctx, 'Circunferencia reconstruida', cx - 110, 20, { color: '#10b981' });
+          }
+          break;
+        case 10:
+          if (step === 0) {
+            drawLabelBox(ctx, 'Geográficas: (-2,19°, -80,85°)', cx - 130, 20, { color: '#10b981' });
+            drawPoint(ctx, { x: cx, y: cy, color: '#10b981', label: 'P' }, { radius: 8 });
+          } else if (step === 1) {
+            drawLabelBox(ctx, 'Zona UTM 17S', cx - 80, 20, { color: '#a855f7' });
+            drawPoint(ctx, { x: cx, y: cy, color: '#10b981' }, { radius: 6 });
+          } else if (step === 2) {
+            drawArrow(ctx, cx, cy, cx + 80, cy - 40, '#f59e0b', 'Proyección');
+            drawPoint(ctx, { x: cx, y: cy, color: '#10b981' }, { radius: 6 });
+            drawPoint(ctx, { x: cx + 80, y: cy - 40, color: '#a855f7' }, { radius: 6 });
+          } else {
+            drawLabelBox(ctx, 'UTM: (517178, 9757861)', cx - 100, 20, { color: '#10b981' });
+            drawPoint(ctx, { x: cx + 80, y: cy - 40, color: '#a855f7', label: 'UTM' }, { radius: 8 });
+          }
+          break;
+        case 11: {
+          const PI = { x: cx, y: cy + 100 };
+          const PC = { x: cx - 180, y: cy + 20 };
+          const PT = { x: cx + 180, y: cy + 20 };
+          const cc = { x: cx, y: cy - 50 };
+          if (step >= 0) {
+            drawLine(ctx, { x: cx - 250, y: cy + 60 }, PI, { color: '#475569', label: 'Tangente' });
+            drawLine(ctx, PI, { x: cx + 250, y: cy + 60 }, { color: '#475569' });
+            drawPoint(ctx, Object.assign({}, PI, { label: 'PI', color: '#f59e0b' }), { radius: 7 });
+          }
+          if (step >= 1) {
+            drawLine(ctx, PC, PI, { color: '#6366f1', dashed: true, label: 'T' });
+            drawPoint(ctx, Object.assign({}, PC, { label: 'PC', color: '#10b981' }), { radius: 7 });
+            drawPoint(ctx, Object.assign({}, PT, { label: 'PT', color: '#10b981' }), { radius: 7 });
+          }
+          if (step >= 2) {
+            drawPoint(ctx, Object.assign({}, cc, { label: 'C', color: '#a855f7' }), { radius: 6 });
+            drawLine(ctx, cc, PI, { color: '#a855f7', dashed: true, label: 'E' });
+          }
+          if (step >= 3) {
+            ctx.beginPath();
+            ctx.arc(cc.x, cc.y, 180, Math.PI * 0.3, Math.PI * 0.7);
+            ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 3; ctx.stroke();
+            drawLabelBox(ctx, 'L = arco', cx - 30, cy + 50, { color: '#6366f1' });
+          }
+          break;
+        }
+        case 12:
+          if (step === 0) drawLabelBox(ctx, 'r = 474 447 m ❌', cx - 100, 30, { color: '#f43f5e', fontSize: 14 });
+          else if (step === 1) {
+            drawLabelBox(ctx, 'h = 51 299,248 ❌ (falta "8")', cx - 130, 30, { color: '#f43f5e', fontSize: 13 });
+            drawLabelBox(ctx, 'h = 512 998,248 ✓', cx - 110, 70, { color: '#10b981', fontSize: 13 });
+          } else if (step === 2) {
+            drawPoint(ctx, { x: cx - 80, y: cy, color: '#10b981', label: 'A' }, { radius: 7 });
+            drawPoint(ctx, { x: cx, y: cy - 30, color: '#a855f7', label: 'Centro' }, { radius: 7 });
+            drawLine(ctx, { x: cx - 80, y: cy }, { x: cx, y: cy - 30 }, { color: '#f59e0b', label: 'r' });
+          } else {
+            drawCircle(ctx, cx, cy - 30, 80, { stroke: '#10b981', fill: 'rgba(16,185,129,0.1)', lineWidth: 2.5 });
+            drawLabelBox(ctx, 'r ≈ 4 179,84 m ✓', cx - 90, 30, { color: '#10b981', fontSize: 14 });
+          }
+          break;
+      }
+    }
+
+    /* ============================================================
+       ELEMENTOS UPDATE
+       ============================================================ */
+    function updateElementos() {
+      const radio = elementosState.radio;
+      const delta = elementosState.delta;
+      const el = Core.elementosCurvaCircular(radio, delta);
+      const grado = Core.gradoCurvatura(radio, true);
+
+      const radioLab = document.getElementById('lab-radio-val');
+      const deltaLab = document.getElementById('lab-delta-val');
+      const gradoLab = document.getElementById('lab-grado');
+      if (radioLab) radioLab.textContent = Core.fmt(radio, 3) + ' m';
+      if (deltaLab) deltaLab.textContent = Core.fmt(delta, 3) + '°';
+      if (gradoLab) gradoLab.textContent = Core.fmt(grado, 4) + '°';
+
+      // Sincronizar inputs numéricos con sliders sin interrumpir escritura
+      const inputR = document.getElementById('input-radio');
+      const inputD = document.getElementById('input-delta');
+      const sliderR = document.getElementById('range-radio');
+      const sliderD = document.getElementById('range-delta');
+      if (inputR && inputR !== document.activeElement) inputR.value = radio;
+      if (inputD && inputD !== document.activeElement) inputD.value = delta;
+      if (sliderR) sliderR.value = radio;
+      if (sliderD) sliderD.value = delta;
+
+      const mDiv = document.getElementById('elementos-metrics');
+      if (mDiv) {
+        mDiv.innerHTML =
+          metricCard('Tangente T', Core.fmt(el.tangente, 3) + ' m', 'T = R · tan(Δ/2)', 'primary') +
+          metricCard('Externa E', Core.fmt(el.externa, 3) + ' m', 'E = R · (sec(Δ/2) - 1)', 'secondary') +
+          metricCard('Ordenada media M', Core.fmt(el.ordenadaMedia, 3) + ' m', 'M = R · (1 - cos(Δ/2))', 'accent') +
+          metricCard('Longitud de arco L', Core.fmt(el.longitudArco, 3) + ' m', 'L = R · Δ_rad', 'warning') +
+          metricCard('Cuerda larga C_l', Core.fmt(el.cuerdaLarga, 3) + ' m', 'C_l = 2R · sin(Δ/2)', 'danger') +
+          metricCard('Grado G', Core.fmt(grado, 4) + '°', 'G = 18000 / (π · R)', 'primary');
+      }
+
+      // Proceso paso a paso con sustitución de valores
+      const procDiv = document.getElementById('elementos-proceso');
+      if (procDiv) {
+        const f = function (n) { return Core.fmt(n, 4); };
+        const deltaRad = (delta * Math.PI) / 180;
+        const halfDeltaRad = deltaRad / 2;
+        const halfDeltaDeg = delta / 2;
+
+        if (!el.valido) {
+          procDiv.innerHTML = `
+            <div class="paso-bloque">
+              <h4><span class="paso-num">!</span>Datos inválidos</h4>
+              <div class="paso-resultado error">El radio debe ser > 0 y el ángulo entre 0 y 180°. Valores actuales: R=${f(radio)} m, Δ=${f(delta)}°</div>
+            </div>
+          `;
+        } else {
+          procDiv.innerHTML = `
+            <div class="paso-bloque">
+              <h4><span class="paso-num">1</span>Convertir Δ a radianes</h4>
+              <div class="paso-formula">Δ_rad = Δ × π / 180 = ${f(delta)} × π / 180</div>
+              <div class="paso-resultado">Δ_rad = ${f(deltaRad)}</div>
+            </div>
+
+            <div class="paso-bloque">
+              <h4><span class="paso-num">2</span>Calcular Tangente T</h4>
+              <div class="paso-formula">T = R · tan(Δ/2) = ${f(radio)} · tan(${f(halfDeltaDeg)}°)</div>
+              <div class="paso-resultado">T = ${f(el.tangente)} m</div>
+            </div>
+
+            <div class="paso-bloque">
+              <h4><span class="paso-num">3</span>Calcular Externa E</h4>
+              <div class="paso-formula">E = R · [sec(Δ/2) − 1] = R · [1/cos(Δ/2) − 1]</div>
+              <div class="paso-formula">E = ${f(radio)} · [1/cos(${f(halfDeltaDeg)}°) − 1]</div>
+              <div class="paso-resultado">E = ${f(el.externa)} m</div>
+            </div>
+
+            <div class="paso-bloque">
+              <h4><span class="paso-num">4</span>Calcular Ordenada media M</h4>
+              <div class="paso-formula">M = R · [1 − cos(Δ/2)] = ${f(radio)} · [1 − cos(${f(halfDeltaDeg)}°)]</div>
+              <div class="paso-resultado">M = ${f(el.ordenadaMedia)} m</div>
+            </div>
+
+            <div class="paso-bloque">
+              <h4><span class="paso-num">5</span>Calcular Longitud de arco L</h4>
+              <div class="paso-formula">L = R · Δ_rad = ${f(radio)} · ${f(deltaRad)}</div>
+              <div class="paso-resultado">L = ${f(el.longitudArco)} m</div>
+            </div>
+
+            <div class="paso-bloque">
+              <h4><span class="paso-num">6</span>Calcular Cuerda larga C_l</h4>
+              <div class="paso-formula">C_l = 2 · R · sin(Δ/2) = 2 · ${f(radio)} · sin(${f(halfDeltaDeg)}°)</div>
+              <div class="paso-resultado">C_l = ${f(el.cuerdaLarga)} m</div>
+            </div>
+
+            <div class="paso-bloque">
+              <h4><span class="paso-num">7</span>Calcular Grado de curvatura G (arco de 100 m)</h4>
+              <div class="paso-formula">G = (100 × 180) / (π × R) = 18000 / (π × ${f(radio)})</div>
+              <div class="paso-resultado">G = ${f(grado)}°</div>
+            </div>
+          `;
+        }
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise([procDiv]).catch(function () {});
+        }
+      }
+    }
+
+    function metricCard(label, value, formula, color) {
+      return '<div class="metric-card">' +
+        '<div class="metric-card-label">' + label + '</div>' +
+        '<div class="metric-card-value text-' + color + '-c">' + value + '</div>' +
+        '<div class="metric-card-formula">' + formula + '</div>' +
+        '</div>';
+    }
+
+    /* ============================================================
+       EJERCICIOS INTERACTIVOS UPDATE
+       ============================================================ */
+    function updateEjercicioInteractivo() {
+      const ej = EJERCICIOS_INTERACTIVOS.find(function (e) { return e.id === ejInteractivosState.selected; });
+      if (!ej) return;
+      const step = ejInteractivosState.step;
+
+      document.querySelectorAll('#ej-selector .ex-btn').forEach(function (b) {
+        b.dataset.active = parseInt(b.dataset.ej) === ej.id;
+      });
+
+      document.getElementById('ej-badge').className = 'badge badge-' + ej.nivel.toLowerCase();
+      document.getElementById('ej-badge').textContent = ej.nivel;
+      document.getElementById('ej-titulo').textContent = ej.titulo;
+      document.getElementById('ej-enunciado').textContent = ej.enunciado;
+
+      const pasosList = document.getElementById('ej-pasos-list');
+      pasosList.innerHTML = ej.pasos.map(function (p, i) {
+        return '<button class="step-btn ' + (i === step ? 'active' : '') + '" data-step="' + i + '">' +
+          '<div class="step-num">Paso ' + (i + 1) + ' de ' + ej.pasos.length + '</div>' +
+          '<div class="step-title">' + p.header + '</div>' +
+          '</button>';
+      }).join('');
+      pasosList.querySelectorAll('.step-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          ejInteractivosState.step = parseInt(b.dataset.step);
+          updateEjercicioInteractivo();
+        });
+      });
+
+      document.getElementById('ej-step-header').textContent = ej.pasos[step].header;
+      document.getElementById('ej-step-content').textContent = ej.pasos[step].content;
+      document.getElementById('ej-graphic-desc').textContent = ej.graphicDesc[step] || ej.graphicDesc[ej.graphicDesc.length - 1];
+
+      document.getElementById('ej-prev').disabled = step === 0;
+      document.getElementById('ej-next').disabled = step === ej.pasos.length - 1;
+
+      drawEjercicio();
+      const panel = document.getElementById('tabpanel-interactivos');
+      if (panel) renderMathInContainer(panel);
+    }
+
+    /* ============================================================
+       EDITOR DE EJERCICIO — Modificar cualquier dato
+       ============================================================ */
+    // Copia de seguridad de los ejercicios originales
+    const EJERCICIOS_ORIGINALES = JSON.parse(JSON.stringify(EJERCICIOS_INTERACTIVOS));
+
+    function mostrarEditorEjercicio() {
+      const ej = EJERCICIOS_INTERACTIVOS.find(function (e) { return e.id === ejInteractivosState.selected; });
+      if (!ej) return;
+      const editor = document.getElementById('ej-editor');
+      const fields = document.getElementById('ej-editor-fields');
+      if (!editor || !fields) return;
+
+      fields.innerHTML = `
+        <div>
+          <label class="coord-col-label" style="text-align:left; display:block; margin-bottom: 0.3rem;">Título del ejercicio</label>
+          <input type="text" class="coord-input" id="edit-titulo" value="${ej.titulo.replace(/"/g, '&quot;')}" style="width: 100%;" />
+        </div>
+        <div>
+          <label class="coord-col-label" style="text-align:left; display:block; margin-bottom: 0.3rem;">Nivel</label>
+          <select class="coord-input" id="edit-nivel" style="width: 100%;">
+            <option value="Básico" ${ej.nivel === 'Básico' ? 'selected' : ''}>Básico</option>
+            <option value="Intermedio" ${ej.nivel === 'Intermedio' ? 'selected' : ''}>Intermedio</option>
+            <option value="Avanzado" ${ej.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+          </select>
+        </div>
+        <div>
+          <label class="coord-col-label" style="text-align:left; display:block; margin-bottom: 0.3rem;">Enunciado (puedes usar LaTeX con \\(...\\) y \\[...\\])</label>
+          <textarea class="coord-input" id="edit-enunciado" rows="3" style="width: 100%; resize: vertical;">${ej.enunciado}</textarea>
+        </div>
+        <div class="coord-col-label" style="text-align:left; margin-top: 0.5rem;">Pasos del ejercicio</div>
+        ${ej.pasos.map(function (p, i) {
+          return `
+            <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 0.75rem; border-left: 3px solid var(--primary);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem;">
+                <strong class="text-primary-c">Paso ${i + 1}</strong>
+                <span class="text-muted-c" style="font-size: 0.75rem;">${p.header}</span>
+              </div>
+              <input type="text" class="coord-input edit-paso-header" data-idx="${i}" value="${p.header.replace(/"/g, '&quot;')}" placeholder="Título del paso" style="width: 100%; margin-bottom: 0.5rem;" />
+              <textarea class="coord-input edit-paso-content" data-idx="${i}" rows="3" placeholder="Contenido del paso (puedes usar LaTeX)" style="width: 100%; resize: vertical;">${p.content}</textarea>
+            </div>
+          `;
+        }).join('')}
+      `;
+      editor.style.display = 'block';
+      editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function aplicarCambiosEjercicio() {
+      const ej = EJERCICIOS_INTERACTIVOS.find(function (e) { return e.id === ejInteractivosState.selected; });
+      if (!ej) return;
+      const titulo = document.getElementById('edit-titulo').value;
+      const nivel = document.getElementById('edit-nivel').value;
+      const enunciado = document.getElementById('edit-enunciado').value;
+      if (titulo) ej.titulo = titulo;
+      if (nivel) ej.nivel = nivel;
+      if (enunciado !== null) ej.enunciado = enunciado;
+      document.querySelectorAll('.edit-paso-header').forEach(function (inp) {
+        const idx = parseInt(inp.dataset.idx);
+        ej.pasos[idx].header = inp.value;
+      });
+      document.querySelectorAll('.edit-paso-content').forEach(function (inp) {
+        const idx = parseInt(inp.dataset.idx);
+        ej.pasos[idx].content = inp.value;
+      });
+      ejInteractivosState.step = 0;
+      updateEjercicioInteractivo();
+      document.getElementById('ej-editor').style.display = 'none';
+    }
+
+    function restaurarEjercicioOriginal() {
+      const original = EJERCICIOS_ORIGINALES.find(function (e) { return e.id === ejInteractivosState.selected; });
+      if (!original) return;
+      const idx = EJERCICIOS_INTERACTIVOS.findIndex(function (e) { return e.id === ejInteractivosState.selected; });
+      EJERCICIOS_INTERACTIVOS[idx] = JSON.parse(JSON.stringify(original));
+      ejInteractivosState.step = 0;
+      updateEjercicioInteractivo();
+      document.getElementById('ej-editor').style.display = 'none';
+    }
+
+    /* ============================================================
+       EVENT BINDINGS
+       ============================================================ */
+    function bindEvents() {
+      // Lab canvas pointer events
+      const labCanvas = document.getElementById('canvas-intro');
+      if (labCanvas) {
+        labCanvas.addEventListener('pointerdown', function (e) {
+          const rect = labCanvas.getBoundingClientRect();
+          const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+          const w = rect.width, h = rect.height;
+          const pts = labState.pts;
+          const circ = Core.reconstruirCircunferencia(pts[0], pts[1], pts[2]);
+          const allX = pts.map(function (p) { return p.x; }).concat([circ.h]);
+          const allY = pts.map(function (p) { return p.y; }).concat([circ.k]);
+          const minX = Math.min.apply(null, allX), maxX = Math.max.apply(null, allX);
+          const minY = Math.min.apply(null, allY), maxY = Math.max.apply(null, allY);
+          const span = Math.max(maxX - minX, maxY - minY) * 1.4 || 1000;
+          const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+          const scale = (Math.min(w, h) - 80) / span;
+          const ox = w / 2, oy = h / 2;
+          for (let i = 0; i < pts.length; i++) {
+            const cp = { x: ox + (pts[i].x - cx) * scale, y: oy - (pts[i].y - cy) * scale };
+            if (Math.hypot(cp.x - mx, cp.y - my) < 18) {
+              labState.dragIdx = i;
+              labCanvas.setPointerCapture(e.pointerId);
+              return;
+            }
+          }
+        });
+        labCanvas.addEventListener('pointermove', function (e) {
+          if (labState.dragIdx === null) return;
+          const rect = labCanvas.getBoundingClientRect();
+          const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+          const w = rect.width, h = rect.height;
+          const pts = labState.pts;
+          const allX = pts.map(function (p) { return p.x; });
+          const allY = pts.map(function (p) { return p.y; });
+          const minX = Math.min.apply(null, allX), maxX = Math.max.apply(null, allX);
+          const minY = Math.min.apply(null, allY), maxY = Math.max.apply(null, allY);
+          const span = Math.max(maxX - minX, maxY - minY) * 1.4 || 1000;
+          const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+          const scale = (Math.min(w, h) - 80) / span;
+          const ox = w / 2, oy = h / 2;
+          const newWX = cx + (mx - ox) / scale;
+          const newWY = cy - (my - oy) / scale;
+          labState.pts[labState.dragIdx] = Object.assign({}, labState.pts[labState.dragIdx], { x: newWX, y: newWY });
+          drawIntroLab();
+        });
+        const endDrag = function (e) {
+          if (labState.dragIdx !== null) {
+            labState.dragIdx = null;
+            try { labCanvas.releasePointerCapture(e.pointerId); } catch (err) {}
+          }
+        };
+        labCanvas.addEventListener('pointerup', endDrag);
+        labCanvas.addEventListener('pointercancel', endDrag);
+      }
+
+      // Reset all
+      const resetBtn = document.getElementById('lab-reset');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          labState.pts = [
+            { x: 517178.087, y: 9757860.897, label: 'A' },
+            { x: 517523.755, y: 9758145.868, label: 'B' },
+            { x: 517874.810, y: 9758475.680, label: 'C' }
+          ];
+          const inputsDiv = document.getElementById('lab-inputs');
+          if (inputsDiv) { delete inputsDiv.dataset.bound; inputsDiv.innerHTML = ''; }
+          const geoDiv = document.getElementById('lab-geo-inputs');
+          if (geoDiv) { delete geoDiv.dataset.bound; geoDiv.innerHTML = ''; }
+          drawIntroLab();
+        });
+      }
+
+      // Convertir coordenadas geográficas a UTM y aplicar
+      const geoApplyBtn = document.getElementById('lab-geo-apply');
+      if (geoApplyBtn) {
+        geoApplyBtn.addEventListener('click', function () {
+          const lats = document.querySelectorAll('.geo-lat');
+          const lons = document.querySelectorAll('.geo-lon');
+          let nuevasCoords = [];
+          let hayError = false;
+          for (let i = 0; i < 3; i++) {
+            const lat = parseFloat(lats[i].value);
+            const lon = parseFloat(lons[i].value);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+              hayError = true; break;
+            }
+            const utm = Core.geoAUtm(lat, lon, 17, true);
+            if (!utm.valido) { hayError = true; break; }
+            nuevasCoords.push({ x: utm.x, y: utm.y });
+          }
+          if (hayError) {
+            alert('Revisa los valores de latitud/longitud. Lat válida: -80 a 84, longitud cualquier valor.');
+            return;
+          }
+          labState.pts = [
+            { x: nuevasCoords[0].x, y: nuevasCoords[0].y, label: 'A' },
+            { x: nuevasCoords[1].x, y: nuevasCoords[1].y, label: 'B' },
+            { x: nuevasCoords[2].x, y: nuevasCoords[2].y, label: 'C' }
+          ];
+          const inputsDiv = document.getElementById('lab-inputs');
+          if (inputsDiv) { delete inputsDiv.dataset.bound; inputsDiv.innerHTML = ''; }
+          drawIntroLab();
+        });
+      }
+
+      // Aplicar coordenadas en lote desde textarea
+      const batchApplyBtn = document.getElementById('lab-batch-apply');
+      if (batchApplyBtn) {
+        batchApplyBtn.addEventListener('click', function () {
+          const ta = document.getElementById('lab-batch');
+          if (!ta) return;
+          const lines = ta.value.split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 0; });
+          if (lines.length < 3) {
+            alert('Pega al menos 3 líneas con formato: X, Y');
+            return;
+          }
+          const nuevas = [];
+          for (let i = 0; i < 3; i++) {
+            // Separar por coma, espacio o tabulación
+            const parts = lines[i].split(/[\s,;]+/).filter(function (p) { return p.length > 0; });
+            if (parts.length < 2) { alert('Línea ' + (i + 1) + ' inválida. Usa: X, Y'); return; }
+            const x = parseFloat(parts[0].replace(',', '.'));
+            const y = parseFloat(parts[1].replace(',', '.'));
+            if (!Number.isFinite(x) || !Number.isFinite(y)) { alert('Línea ' + (i + 1) + ': valores no numéricos'); return; }
+            nuevas.push({ x: x, y: y });
+          }
+          labState.pts = [
+            { x: nuevas[0].x, y: nuevas[0].y, label: 'A' },
+            { x: nuevas[1].x, y: nuevas[1].y, label: 'B' },
+            { x: nuevas[2].x, y: nuevas[2].y, label: 'C' }
+          ];
+          const inputsDiv = document.getElementById('lab-inputs');
+          if (inputsDiv) { delete inputsDiv.dataset.bound; inputsDiv.innerHTML = ''; }
+          drawIntroLab();
+        });
+      }
+
+      // Exportar coordenadas actuales al textarea
+      const batchExportBtn = document.getElementById('lab-batch-export');
+      if (batchExportBtn) {
+        batchExportBtn.addEventListener('click', function () {
+          const ta = document.getElementById('lab-batch');
+          if (!ta) return;
+          ta.value = labState.pts.map(function (p) {
+            return p.x + ', ' + p.y;
+          }).join('\n');
+        });
+      }
+
+      // Elementos sliders + inputs numéricos
+      const rSlider = document.getElementById('range-radio');
+      const dSlider = document.getElementById('range-delta');
+      const rInput = document.getElementById('input-radio');
+      const dInput = document.getElementById('input-delta');
+      if (rSlider) rSlider.addEventListener('input', function (e) {
+        elementosState.radio = parseFloat(e.target.value) || 0;
+        updateElementos();
+      });
+      if (dSlider) dSlider.addEventListener('input', function (e) {
+        elementosState.delta = parseFloat(e.target.value) || 0;
+        updateElementos();
+      });
+      if (rInput) rInput.addEventListener('input', function (e) {
+        const v = parseFloat(e.target.value);
+        if (Number.isFinite(v)) { elementosState.radio = v; updateElementos(); }
+      });
+      if (dInput) dInput.addEventListener('input', function (e) {
+        const v = parseFloat(e.target.value);
+        if (Number.isFinite(v)) { elementosState.delta = v; updateElementos(); }
+      });
+
+      // Ejercicios interactivos
+      document.querySelectorAll('#ej-selector .ex-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          ejInteractivosState.selected = parseInt(b.dataset.ej);
+          ejInteractivosState.step = 0;
+          updateEjercicioInteractivo();
+        });
+      });
+      const ejPrev = document.getElementById('ej-prev');
+      const ejNext = document.getElementById('ej-next');
+      if (ejPrev) ejPrev.addEventListener('click', function () {
+        ejInteractivosState.step = Math.max(0, ejInteractivosState.step - 1);
+        updateEjercicioInteractivo();
+      });
+      if (ejNext) ejNext.addEventListener('click', function () {
+        const ej = EJERCICIOS_INTERACTIVOS.find(function (e) { return e.id === ejInteractivosState.selected; });
+        ejInteractivosState.step = Math.min(ej.pasos.length - 1, ejInteractivosState.step + 1);
+        updateEjercicioInteractivo();
+      });
+
+      // Editor de ejercicio
+      const ejEdit = document.getElementById('ej-edit');
+      const ejApply = document.getElementById('ej-editor-apply');
+      const ejReset = document.getElementById('ej-editor-reset');
+      const ejCancel = document.getElementById('ej-editor-cancel');
+      if (ejEdit) ejEdit.addEventListener('click', function () {
+        const editor = document.getElementById('ej-editor');
+        if (editor.style.display === 'block') {
+          editor.style.display = 'none';
+        } else {
+          mostrarEditorEjercicio();
+        }
+      });
+      if (ejApply) ejApply.addEventListener('click', aplicarCambiosEjercicio);
+      if (ejReset) ejReset.addEventListener('click', restaurarEjercicioOriginal);
+      if (ejCancel) ejCancel.addEventListener('click', function () {
+        document.getElementById('ej-editor').style.display = 'none';
+      });
+
+      // Acordeones propuestos
+      document.querySelectorAll('.accordion-trigger').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const id = parseInt(btn.dataset.prop);
+          const content = document.getElementById('prop-content-' + id);
+          const isOpen = btn.getAttribute('aria-expanded') === 'true';
+          // Close all
+          document.querySelectorAll('.accordion-trigger').forEach(function (b) {
+            b.setAttribute('aria-expanded', 'false');
+          });
+          document.querySelectorAll('.accordion-content').forEach(function (c) { c.style.display = 'none'; });
+          if (!isOpen) {
+            btn.setAttribute('aria-expanded', 'true');
+            content.style.display = 'block';
+            ejPropuestosState.openId = id;
+            renderMathInContainer(content);
+          } else {
+            ejPropuestosState.openId = null;
+          }
+        });
+      });
+    }
+
+    /* ============================================================
+       CANVAS DRAWERS REGISTRY
+       ============================================================ */
+    function registerDrawers() {
+      window.canvasDrawers.intro = drawIntroLab;
+      window.canvasDrawers.interactivos = drawEjercicio;
+    }
+
+    /* ============================================================
+       RESIZE HANDLER
+       ============================================================ */
+    let resizeTimer;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (activeTab === 'intro') drawIntroLab();
+        if (activeTab === 'interactivos') drawEjercicio();
+      }, 150);
+    });
+
+    /* ============================================================
+       INIT
+       ============================================================ */
+    /* ============================================================
+       PANEL DE CONFIGURACIÓN MAESTRA
+       ============================================================ */
+    const CONFIG_KEY = 'curvas-circulares-config-v1';
+    const configState = {
+      title: 'Curvas Circulares de Carreteras',
+      subtitle: 'Reconstrucción geométrica mediante puntos de control — Método de Cramer aplicado a la topografía vial.',
+      puntos: [
+        { x: 517178.087, y: 9757860.897, label: 'A' },
+        { x: 517523.755, y: 9758145.868, label: 'B' },
+        { x: 517874.810, y: 9758475.680, label: 'C' }
+      ],
+      radio: 4180,
+      delta: 5
+    };
+
+    function showToast(msg, color) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.style.background = color || 'var(--accent)';
+      toast.classList.add('show');
+      setTimeout(function () { toast.classList.remove('show'); }, 2500);
+    }
+
+    function guardarConfig() {
+      try {
+        const data = {
+          config: configState,
+          ejercicios: EJERCICIOS_INTERACTIVOS,
+          propuestos: EJERCICIOS_PROPUESTOS,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(data));
+        showToast('✓ Cambios guardados');
+        return true;
+      } catch (e) {
+        showToast('✗ Error al guardar', 'var(--danger)');
+        return false;
+      }
+    }
+
+    function cargarConfig() {
+      try {
+        const raw = localStorage.getItem(CONFIG_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        if (data.config) {
+          Object.assign(configState, data.config);
+          // Aplicar al simulador
+          labState.pts = configState.puntos.map(function (p) {
+            return { x: p.x, y: p.y, label: p.label };
+          });
+          elementosState.radio = configState.radio;
+          elementosState.delta = configState.delta;
+          // Aplicar título y subtítulo
+          const titleEl = document.querySelector('.site-title');
+          const subEl = document.querySelector('.site-subtitle');
+          if (titleEl && configState.title) titleEl.textContent = configState.title;
+          if (subEl && configState.subtitle) subEl.textContent = configState.subtitle;
+          document.title = configState.title + ' — Panel Educativo Interactivo';
+        }
+        if (data.ejercicios) {
+          data.ejercicios.forEach(function (ej) {
+            const idx = EJERCICIOS_INTERACTIVOS.findIndex(function (e) { return e.id === ej.id; });
+            if (idx >= 0) EJERCICIOS_INTERACTIVOS[idx] = ej;
+          });
+        }
+        if (data.propuestos) {
+          data.propuestos.forEach(function (p) {
+            const idx = EJERCICIOS_PROPUESTOS.findIndex(function (e) { return e.id === p.id; });
+            if (idx >= 0) EJERCICIOS_PROPUESTOS[idx] = p;
+          });
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function exportarConfig() {
+      const data = {
+        version: '1.0',
+        fecha: new Date().toISOString(),
+        config: configState,
+        ejercicios: EJERCICIOS_INTERACTIVOS,
+        propuestos: EJERCICIOS_PROPUESTOS
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'curvas-circulares-config.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('⬇️ Configuración exportada');
+    }
+
+    function importarConfig(file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.config) Object.assign(configState, data.config);
+          if (data.ejercicios) {
+            data.ejercicios.forEach(function (ej) {
+              const idx = EJERCICIOS_INTERACTIVOS.findIndex(function (el) { return el.id === ej.id; });
+              if (idx >= 0) EJERCICIOS_INTERACTIVOS[idx] = ej;
+            });
+          }
+          if (data.propuestos) {
+            data.propuestos.forEach(function (p) {
+              const idx = EJERCICIOS_PROPUESTOS.findIndex(function (el) { return el.id === p.id; });
+              if (idx >= 0) EJERCICIOS_PROPUESTOS[idx] = p;
+            });
+          }
+          guardarConfig();
+          // Recargar vista
+          if (activeTab === 'interactivos') updateEjercicioInteractivo();
+          if (activeTab === 'elementos') updateElementos();
+          if (activeTab === 'intro') {
+            const inputsDiv = document.getElementById('lab-inputs');
+            if (inputsDiv) { delete inputsDiv.dataset.bound; inputsDiv.innerHTML = ''; }
+            drawIntroLab();
+          }
+          abrirConfigModal(); // Refrescar modal
+          showToast('⬆️ Configuración importada');
+        } catch (err) {
+          showToast('✗ Archivo inválido', 'var(--danger)');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function restaurarOriginales() {
+      if (!confirm('¿Restaurar todos los valores originales? Se perderán los cambios guardados.')) return;
+      localStorage.removeItem(CONFIG_KEY);
+      location.reload();
+    }
+
+    function borrarGuardado() {
+      if (!confirm('¿Borrar el guardado del navegador? Los datos cargados seguirán visibles hasta que recargues.')) return;
+      localStorage.removeItem(CONFIG_KEY);
+      showToast('🗑️ Guardado borrado');
+    }
+
+    function abrirConfigModal() {
+      // Rellenar campos con valores actuales
+      document.getElementById('cfg-title').value = configState.title;
+      document.getElementById('cfg-subtitle').value = configState.subtitle;
+      document.getElementById('cfg-radio').value = elementosState.radio;
+      document.getElementById('cfg-delta').value = elementosState.delta;
+
+      // Puntos
+      const ptsDiv = document.getElementById('cfg-puntos');
+      ptsDiv.innerHTML = labState.pts.map(function (p, i) {
+        return '<div>' +
+          '<label class="coord-col-label" style="text-align:left; display:block; margin-bottom:0.3rem;">' + p.label + '</label>' +
+          '<div style="display:flex; gap:0.3rem;">' +
+            '<input type="number" class="coord-input cfg-px" data-idx="' + i + '" value="' + p.x + '" step="any" placeholder="X" aria-label="X del punto ' + p.label + '" />' +
+            '<input type="number" class="coord-input cfg-py" data-idx="' + i + '" value="' + p.y + '" step="any" placeholder="Y" aria-label="Y del punto ' + p.label + '" />' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      // Selector de ejercicios
+      const sel = document.getElementById('cfg-ej-select');
+      sel.innerHTML = EJERCICIOS_INTERACTIVOS.map(function (e) {
+        return '<option value="' + e.id + '">E' + e.id + ' — ' + e.titulo + '</option>';
+      }).join('');
+      sel.value = ejInteractivosState.selected;
+      renderEditorEjercicioConfig();
+
+      document.getElementById('config-modal-overlay').classList.add('active');
+    }
+
+    function renderEditorEjercicioConfig() {
+      const sel = document.getElementById('cfg-ej-select');
+      const ejId = parseInt(sel.value);
+      const ej = EJERCICIOS_INTERACTIVOS.find(function (e) { return e.id === ejId; });
+      const cont = document.getElementById('cfg-ej-editor');
+      if (!ej || !cont) return;
+      cont.innerHTML = `
+        <div>
+          <label class="coord-col-label" style="text-align:left; display:block; margin-bottom:0.3rem;">Título</label>
+          <input type="text" class="coord-input cfg-ej-titulo" value="${ej.titulo.replace(/"/g, '&quot;')}" style="width:100%;" />
+        </div>
+        <div>
+          <label class="coord-col-label" style="text-align:left; display:block; margin-bottom:0.3rem;">Enunciado</label>
+          <textarea class="coord-input cfg-ej-enunciado" rows="2" style="width:100%; resize:vertical;">${ej.enunciado}</textarea>
+        </div>
+        <div class="text-muted-c" style="font-size:0.75rem;">Para editar los 4 pasos en detalle, usa el botón "✏️ Editar" en la pestaña de ejercicios.</div>
+      `;
+    }
+
+    function aplicarCambiosConfig() {
+      // Título y subtítulo
+      configState.title = document.getElementById('cfg-title').value || 'Curvas Circulares';
+      configState.subtitle = document.getElementById('cfg-subtitle').value || '';
+      const titleEl = document.querySelector('.site-title');
+      const subEl = document.querySelector('.site-subtitle');
+      if (titleEl) titleEl.textContent = configState.title;
+      if (subEl) subEl.textContent = configState.subtitle;
+      document.title = configState.title + ' — Panel Educativo Interactivo';
+
+      // Puntos
+      document.querySelectorAll('.cfg-px, .cfg-py').forEach(function (inp) {
+        const idx = parseInt(inp.dataset.idx);
+        const val = parseFloat(inp.value);
+        if (Number.isFinite(val)) {
+          if (inp.classList.contains('cfg-px')) labState.pts[idx].x = val;
+          else labState.pts[idx].y = val;
+        }
+      });
+      configState.puntos = labState.pts.map(function (p) {
+        return { x: p.x, y: p.y, label: p.label };
+      });
+
+      // Radio y delta
+      const radio = parseFloat(document.getElementById('cfg-radio').value);
+      const delta = parseFloat(document.getElementById('cfg-delta').value);
+      if (Number.isFinite(radio)) { elementosState.radio = radio; configState.radio = radio; }
+      if (Number.isFinite(delta)) { elementosState.delta = delta; configState.delta = delta; }
+
+      // Ejercicio editado
+      const ejId = parseInt(document.getElementById('cfg-ej-select').value);
+      const ej = EJERCICIOS_INTERACTIVOS.find(function (e) { return e.id === ejId; });
+      if (ej) {
+        const nuevoTitulo = document.querySelector('.cfg-ej-titulo').value;
+        const nuevoEnun = document.querySelector('.cfg-ej-enunciado').value;
+        if (nuevoTitulo) ej.titulo = nuevoTitulo;
+        if (nuevoEnun !== null) ej.enunciado = nuevoEnun;
+      }
+
+      // Guardar en localStorage
+      guardarConfig();
+
+      // Refrescar vistas
+      if (activeTab === 'intro') {
+        const inputsDiv = document.getElementById('lab-inputs');
+        if (inputsDiv) { delete inputsDiv.dataset.bound; inputsDiv.innerHTML = ''; }
+        drawIntroLab();
+      }
+      if (activeTab === 'elementos') updateElementos();
+      if (activeTab === 'interactivos') updateEjercicioInteractivo();
+
+      showToast('✓ Cambios aplicados y guardados');
+      document.getElementById('config-modal-overlay').classList.remove('active');
+    }
+
+    function bindConfigEvents() {
+      const fab = document.getElementById('config-fab');
+      const overlay = document.getElementById('config-modal-overlay');
+      const closeBtn = document.getElementById('config-close');
+      const cancelBtn = document.getElementById('cfg-cancel');
+      const saveBtn = document.getElementById('cfg-save');
+      const exportBtn = document.getElementById('cfg-export');
+      const importBtn = document.getElementById('cfg-import');
+      const resetBtn = document.getElementById('cfg-reset');
+      const clearBtn = document.getElementById('cfg-clear');
+      const importFile = document.getElementById('cfg-import-file');
+      const ejSelect = document.getElementById('cfg-ej-select');
+
+      if (fab) fab.addEventListener('click', abrirConfigModal);
+      if (closeBtn) closeBtn.addEventListener('click', function () { overlay.classList.remove('active'); });
+      if (cancelBtn) cancelBtn.addEventListener('click', function () { overlay.classList.remove('active'); });
+      if (overlay) overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+      if (saveBtn) saveBtn.addEventListener('click', aplicarCambiosConfig);
+      if (exportBtn) exportBtn.addEventListener('click', exportarConfig);
+      if (importBtn) importBtn.addEventListener('click', function () { importFile.click(); });
+      if (importFile) importFile.addEventListener('change', function (e) {
+        if (e.target.files[0]) importarConfig(e.target.files[0]);
+      });
+      if (resetBtn) resetBtn.addEventListener('click', restaurarOriginales);
+      if (clearBtn) clearBtn.addEventListener('click', borrarGuardado);
+      if (ejSelect) ejSelect.addEventListener('change', renderEditorEjercicioConfig);
+
+      // Tecla Escape para cerrar modal
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('active')) {
+          overlay.classList.remove('active');
+        }
+      });
+    }
+
+    function init() {
+      // Cargar configuración guardada primero
+      cargarConfig();
+      renderTabsNav();
+      renderAllPanels();
+      registerDrawers();
+      bindEvents();
+      bindConfigEvents();
+      updateElementos();
+      updateEjercicioInteractivo();
+      // Initial draw of active tab
+      setTimeout(function () {
+        triggerTabDraw(activeTab);
+        // Render math in all panels (MathJax may not be loaded yet, but it will pick up)
+        document.querySelectorAll('.tab-panel').forEach(function (p) {
+          renderMathInContainer(p);
+        });
+      }, 100);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
